@@ -29,6 +29,10 @@
       }
       /* KaTeX font fix */
       .katex { font-size: 1.1em; }
+      /* 分數上下留一點空間，避免和上下行擠在一起 */
+      .katex .mfrac { padding: 0 0.08em; }
+      .prose .katex { line-height: 1.2; }
+      li:has(.mfrac), p:has(.mfrac) { line-height: 2.1; }
       
       /* Animations */
       @keyframes spin-slow {
@@ -144,6 +148,7 @@ var ANALYSIS_PROMPT_CONTEXT = `
 **詳細執行規則**：
 1. **拆題**：看到不同的編號 (1., 2. 或 ❶, ❷)，**務必**拆分成不同物件。
 2. **座標**：[ymin, xmin, ymax, xmax]，必須包含題幹文字。
+3. **數學式寫法**：所有數學式（分數、乘除號、次方、角度等）一律用 $...$ 包起來，例如 $\\frac{3}{4}$、$3 \\times 4$。不要寫出沒有被 $ 包住的 \\frac 等指令，也不要用 \\( \\) 或 \\[ \\]。**title 欄位請用一般文字寫分數（例如 3/4），不要用 LaTeX。**
 
 **JSON 格式範例**：
 [
@@ -493,6 +498,50 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
+// utils/mathText.ts
+var normalizeMath = (s) => (s || "").replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `$$${m}$$`).replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `$${m}$`).replace(/\\t?frac(?=\s*[{\d])/g, "\\dfrac");
+var SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+var SYMBOLS = [
+  [/\\times/g, "×"],
+  [/\\div/g, "÷"],
+  [/\\cdot/g, "·"],
+  [/\\pm/g, "±"],
+  [/\\leq?/g, "≤"],
+  [/\\geq?/g, "≥"],
+  [/\\neq?/g, "≠"],
+  [/\\approx/g, "≈"],
+  [/\\pi/g, "π"],
+  [/\^\{?\\circ\}?/g, "°"],
+  [/\\circ/g, "°"],
+  [/\\%/g, "%"],
+  [/\\angle/g, "∠"],
+  [/\\triangle/g, "△"],
+  [/\\square/g, "□"],
+  [/\\cdots|\\ldots|\\dots/g, "…"],
+  [/\\rightarrow|\\to/g, "→"],
+  [/\\Rightarrow/g, "⇒"]
+];
+var latexToPlain = (input) => {
+  if (!input) return "";
+  const convert = (tex) => {
+    let t = tex;
+    t = t.replace(/\\(?:text|mathrm|textbf|mathbf)\{([^{}]*)\}/g, "$1");
+    for (let i = 0; i < 4; i++) {
+      t = t.replace(/(\d)?\s*\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, (_, whole, a, b) => `${whole ? whole + " " : ""}${a}/${b}`);
+      t = t.replace(/\\[dt]?frac\s*(\d)(\d)/g, "$1/$2");
+    }
+    t = t.replace(/\\sqrt\{([^{}]*)\}/g, "√($1)");
+    t = t.replace(/\^\{?(\d)\}?/g, (_, d) => SUP[d] || `^${d}`);
+    for (const [re, rep] of SYMBOLS) t = t.replace(re, rep);
+    t = t.replace(/\\left|\\right/g, "").replace(/\\[,;:! ]/g, " ").replace(/\\quad|\\qquad/g, " ");
+    t = t.replace(/\\([a-zA-Z]+)/g, "$1");
+    t = t.replace(/[{}]/g, "");
+    return t.replace(/\s{2,}/g, " ").trim();
+  };
+  return normalizeMath(input).replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => convert(m)).replace(/\$([^$]+?)\$/g, (_, m) => convert(m)).replace(/(\d?\s*\\[dt]?frac\s*\{[^{}]*\}\s*\{[^{}]*\})/g, (m) => convert(m)).replace(/\\(times|div|cdot)/g, (m) => convert(m));
+};
+var stripNoteLabel = (note) => (note || "").replace(/^\s*(?:預期(?:學生)?回答|學生可能回答|設計意圖|意圖|說明)\s*[:：]\s*/, "").trim();
+
 // services/geminiService.ts
 var API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 var getEnvApiKey = () => {
@@ -803,7 +852,7 @@ ${focus ? `這次請**聚焦在「${focus.label}」**：${focus.hint}` : "請從
 【要求】
 - 使用繁體中文，用國小學生聽得懂的話，老師可以直接念出來問學生。
 - 提問要緊扣這一題的數字與情境，不要寫成任何題目都適用的空話。
-- 每題附上 note：${info.noteLabel}（一句話）。
+- 每題附上 note：${info.noteLabel}（一句話，開頭不要再寫「${info.noteLabel}：」）。
 - 數學式可以用 LaTeX，例如 $\\frac{3}{4}$。
 
 【輸出格式】只輸出 JSON 陣列：
@@ -819,14 +868,23 @@ ${focus ? `這次請**聚焦在「${focus.label}」**：${focus.hint}` : "請從
   } catch {
     throw new Error("模型回傳的格式無法解析，請再按一次。");
   }
-  const out = arr.map((x) => typeof x === "string" ? { question: x } : { question: String(x?.question || x?.q || ""), note: x?.note ? String(x.note) : void 0 }).filter((x) => x.question.trim().length > 0);
+  const out = arr.map((x) => typeof x === "string" ? { question: x } : { question: String(x?.question || x?.q || ""), note: x?.note ? stripNoteLabel(String(x.note)) : void 0 }).filter((x) => x.question.trim().length > 0);
   if (out.length === 0) throw new Error("這次沒有產生新的提問，請再試一次。");
   return out;
 };
 
 // components/QuestionPanel.tsx
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
-var md = (text) => /* @__PURE__ */ jsx4(ReactMarkdown, { remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex], children: text });
+var md = (text) => /* @__PURE__ */ jsx4(ReactMarkdown, { remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex], children: normalizeMath(text) });
+var mdInline = (text) => /* @__PURE__ */ jsx4(
+  ReactMarkdown,
+  {
+    remarkPlugins: [remarkMath],
+    rehypePlugins: [rehypeKatex],
+    components: { p: ({ children }) => /* @__PURE__ */ jsx4("span", { children }) },
+    children: normalizeMath(text)
+  }
+);
 var THEME = {
   scaffolding: {
     box: "bg-green-50 border-green-200",
@@ -880,11 +938,11 @@ var QuestionPanel = ({ item, type, onGenerate, onRemove }) => {
     run("custom", { id: "custom", icon: "🎯", label: text, hint: `老師希望的方向：${text}` });
   };
   const copyAll = async () => {
-    const lines = [`${info.name}｜${item.title}`, ""];
-    if (original) lines.push(original.trim(), "");
+    const lines = [`${info.name}｜${latexToPlain(item.title)}`, ""];
+    if (original) lines.push(latexToPlain(original.trim()), "");
     groups.forEach((g) => {
       lines.push(`【${g.label}】`);
-      g.questions.forEach((q, i) => lines.push(`${i + 1}. ${q.question}${q.note ? `（${info.noteLabel}：${q.note}）` : ""}`));
+      g.questions.forEach((q, i) => lines.push(`${i + 1}. ${latexToPlain(q.question)}${q.note ? `（${info.noteLabel}：${latexToPlain(stripNoteLabel(q.note))}）` : ""}`));
       lines.push("");
     });
     const text = lines.join("\n").trim();
@@ -953,11 +1011,11 @@ var QuestionPanel = ({ item, type, onGenerate, onRemove }) => {
       ] }),
       /* @__PURE__ */ jsx4("ol", { className: "list-decimal pl-5 flex flex-col gap-1.5 text-slate-800", children: g.questions.map((q, i) => /* @__PURE__ */ jsxs4("li", { children: [
         /* @__PURE__ */ jsx4("div", { className: "prose max-w-none prose-p:my-0", children: md(q.question) }),
-        q.note && /* @__PURE__ */ jsxs4("div", { className: `text-xs font-bold mt-0.5 ${t.note}`, children: [
+        q.note && /* @__PURE__ */ jsxs4("div", { className: `text-sm font-bold mt-0.5 ${t.note}`, children: [
           "↳ ",
           info.noteLabel,
           "：",
-          q.note
+          mdInline(stripNoteLabel(q.note))
         ] })
       ] }, i)) })
     ] }, g.id)),
@@ -1241,7 +1299,7 @@ var AnalysisView = ({
   const goTo = (idx) => {
     setCurrentIndex(Math.min(Math.max(0, idx), Math.max(0, totalItems - 1)));
   };
-  const md2 = (text) => /* @__PURE__ */ jsx5(ReactMarkdown2, { remarkPlugins: [remarkMath2], rehypePlugins: [rehypeKatex2], children: text });
+  const md2 = (text) => /* @__PURE__ */ jsx5(ReactMarkdown2, { remarkPlugins: [remarkMath2], rehypePlugins: [rehypeKatex2], children: normalizeMath(text) });
   const navBtn = (disabled) => `w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full font-black flex items-center justify-center transition-all ${disabled ? "bg-blue-500/40 text-blue-300 cursor-not-allowed" : "bg-white text-blue-600 hover:bg-yellow-100"}`;
   const prevDisabled = safeIndex === 0 || totalItems === 0;
   const nextDisabled = totalItems === 0 || safeIndex === totalItems - 1;
@@ -1261,7 +1319,7 @@ var AnalysisView = ({
         }
       ),
       /* @__PURE__ */ jsxs5("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ jsx5("h2", { className: "font-black text-base sm:text-lg leading-tight truncate", children: currentItem?.title || "分析中…" }),
+        /* @__PURE__ */ jsx5("h2", { className: "font-black text-base sm:text-lg leading-tight truncate", children: currentItem?.title ? latexToPlain(currentItem.title) : "分析中…" }),
         /* @__PURE__ */ jsxs5("div", { className: "text-[11px] sm:text-xs text-blue-100 font-bold truncate", children: [
           pageLabel(renderPageNum),
           "（共 ",
@@ -1292,7 +1350,7 @@ var AnalysisView = ({
           className: "min-w-0 flex-1 sm:flex-none sm:max-w-xs bg-white border-2 border-blue-200 rounded-xl px-2 py-1.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500",
           children: [
             totalItems === 0 && /* @__PURE__ */ jsx5("option", { value: "", children: "題目分析中…" }),
-            itemsByPage.map((g) => /* @__PURE__ */ jsx5("optgroup", { label: pageLabel(g.page), children: g.items.map((it) => /* @__PURE__ */ jsx5("option", { value: it.idx, children: it.title }, it.idx)) }, g.page))
+            itemsByPage.map((g) => /* @__PURE__ */ jsx5("optgroup", { label: pageLabel(g.page), children: g.items.map((it) => /* @__PURE__ */ jsx5("option", { value: it.idx, children: latexToPlain(it.title) }, it.idx)) }, g.page))
           ]
         }
       ),
@@ -1355,7 +1413,7 @@ var AnalysisView = ({
         ] }),
         currentItem?.visualCue && currentItem.visualCue !== "無" && /* @__PURE__ */ jsxs5("p", { className: "px-3 py-2 text-xs font-bold text-slate-500 border-t-2 border-blue-50", children: [
           "📍 ",
-          currentItem.visualCue
+          latexToPlain(currentItem.visualCue)
         ] })
       ] }),
       /* @__PURE__ */ jsxs5("section", { className: "min-w-0 flex flex-col gap-4", children: [
@@ -1437,7 +1495,7 @@ var AnalysisView = ({
                       "aria-expanded": open,
                       className: "w-full flex items-center gap-2 px-4 py-2.5 text-left font-black text-slate-800 hover:bg-slate-50",
                       children: [
-                        /* @__PURE__ */ jsx5("span", { className: "flex-1 min-w-0", children: sec.title }),
+                        /* @__PURE__ */ jsx5("span", { className: "flex-1 min-w-0", children: latexToPlain(sec.title) }),
                         /* @__PURE__ */ jsx5("span", { "aria-hidden": "true", className: "text-slate-400 text-sm", children: open ? "收合 ▲" : "展開 ▼" })
                       ]
                     }
