@@ -2696,28 +2696,91 @@ var App = () => {
               ]
             }
           ),
-          showHelp && /* @__PURE__ */ jsxs8("div", { id: "help-popover", className: "absolute right-1/2 translate-x-1/2 lg:right-0 lg:translate-x-0 top-full mt-2 w-[min(92vw,26rem)] z-40 bg-white border-[3px] border-teal-300 rounded-2xl shadow-2xl p-4 text-left", children: [
+          showHelp && /* @__PURE__ */ jsxs8("div", { id: "help-popover", className: "absolute right-1/2 translate-x-1/2 lg:right-0 lg:translate-x-0 top-full mt-2 w-[min(94vw,32rem)] max-h-[min(75vh,36rem)] overflow-y-auto z-40 bg-white border-[3px] border-teal-300 rounded-2xl shadow-2xl p-4 text-left", children: [
             /* @__PURE__ */ jsxs8("div", { className: "flex items-center mb-2", children: [
-              /* @__PURE__ */ jsx8("span", { className: "font-black text-teal-800", children: "💡 怎麼使用？" }),
+              /* @__PURE__ */ jsx8("span", { className: "font-black text-teal-800 text-base", children: "💡 怎麼使用？" }),
               /* @__PURE__ */ jsx8("button", { onClick: () => setShowHelp(false), className: "ml-auto w-7 h-7 rounded-full text-slate-400 hover:bg-slate-100", "aria-label": "關閉使用說明", children: "✕" })
             ] }),
-            /* @__PURE__ */ jsxs8("ol", { className: "text-slate-700 font-bold text-sm space-y-1.5 list-decimal list-inside", children: [
-              /* @__PURE__ */ jsx8("li", { children: "左上角「⚙️ 金鑰與模型」貼上 Gemini API 金鑰（只需設定一次）。" }),
-              /* @__PURE__ */ jsxs8("li", { children: [
-                "選擇分析深度，再按",
-                /* @__PURE__ */ jsx8("span", { className: "text-red-500", children: "「選擇檔案」" }),
-                "或",
-                /* @__PURE__ */ jsx8("span", { className: "text-yellow-600", children: "「拍照分析」" }),
-                "，也可以把檔案拖進來、按 Ctrl+V 貼上截圖，或貼上題目文字與檔案連結。"
+            /* @__PURE__ */ jsxs8("div", { className: "flex flex-col gap-3 text-sm text-slate-700 font-bold leading-relaxed", children: [
+              /* @__PURE__ */ jsxs8("section", { children: [
+                /* @__PURE__ */ jsx8("h4", { className: "text-xs font-black text-teal-700 tracking-wider mb-1", children: "一、開始前（只需一次）" }),
+                /* @__PURE__ */ jsxs8("p", { children: [
+                  "按左上角",
+                  /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "「⚙️ 金鑰與模型」" }),
+                  "，貼上 Gemini API 金鑰、選擇模型，可以按",
+                  /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "「🧪 測試連線」" }),
+                  "確認能用。"
+                ] })
               ] }),
-              /* @__PURE__ */ jsx8("li", { children: "多頁 PDF 會先讓您勾選要分析的頁面，哆啦A夢逐頁分析布題與重點。" }),
-              /* @__PURE__ */ jsxs8("li", { children: [
-                "獲得包含",
-                /* @__PURE__ */ jsx8("span", { className: "text-green-600", children: "「降階提問」" }),
-                "與",
-                /* @__PURE__ */ jsx8("span", { className: "text-indigo-600", children: "「素養提問」" }),
-                "的備課指引！"
-              ] })
+              /* @__PURE__ */ jsxs8("section", { children: [
+                /* @__PURE__ */ jsx8("h4", { className: "text-xs font-black text-teal-700 tracking-wider mb-1", children: "二、放入教材" }),
+                /* @__PURE__ */ jsxs8("ol", { className: "list-decimal pl-5 space-y-1", children: [
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "① 選擇分析深度" }),
+                    "：快速瀏覽（抓重點）、標準分析、深度剖析（加課綱、多元解法、差異化與評量）。"
+                  ] }),
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    /* @__PURE__ */ jsx8("span", { className: "text-red-500", children: "② 放入教材" }),
+                    "，以下任一種都可以：",
+                    /* @__PURE__ */ jsxs8("ul", { className: "list-disc pl-5 mt-0.5 font-medium text-slate-600", children: [
+                      /* @__PURE__ */ jsxs8("li", { children: [
+                        "按",
+                        /* @__PURE__ */ jsx8("span", { className: "text-red-500 font-bold", children: "「選擇檔案」" }),
+                        "或",
+                        /* @__PURE__ */ jsx8("span", { className: "text-yellow-600 font-bold", children: "「拍照分析」" })
+                      ] }),
+                      /* @__PURE__ */ jsx8("li", { children: "把圖片或 PDF 拖曳到框內" }),
+                      /* @__PURE__ */ jsxs8("li", { children: [
+                        "按 ",
+                        /* @__PURE__ */ jsx8("kbd", { className: "px-1 rounded border border-slate-300 bg-slate-50 text-xs", children: "Ctrl" }),
+                        "+",
+                        /* @__PURE__ */ jsx8("kbd", { className: "px-1 rounded border border-slate-300 bg-slate-50 text-xs", children: "V" }),
+                        " 貼上截圖"
+                      ] }),
+                      /* @__PURE__ */ jsx8("li", { children: "在輸入框貼上題目文字，或圖片／PDF／網頁的連結" })
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsx8("li", { children: "多頁 PDF 會先出現縮圖，勾選要分析的頁面（可按 🔍 放大，或輸入「1-3, 5」）。" })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs8("section", { children: [
+                /* @__PURE__ */ jsx8("h4", { className: "text-xs font-black text-teal-700 tracking-wider mb-1", children: "三、看分析結果" }),
+                /* @__PURE__ */ jsxs8("ol", { className: "list-decimal pl-5 space-y-1", children: [
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    "左邊是",
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "題目特寫" }),
+                    "（可切換整頁、放大）；右邊依序是題目內容、提問、",
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "哆啦A夢分析" }),
+                    "（每一小節都可收合）。"
+                  ] }),
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    "點",
+                    /* @__PURE__ */ jsx8("span", { className: "text-green-600", children: "「📉 降階提問」" }),
+                    "或",
+                    /* @__PURE__ */ jsx8("span", { className: "text-indigo-600", children: "「🚀 素養提問」" }),
+                    "展開；不夠用可按",
+                    /* @__PURE__ */ jsx8("span", { className: "text-green-600", children: "「➕ 再多 3 題」" }),
+                    "、選擇面向或輸入自訂面向，再用",
+                    /* @__PURE__ */ jsx8("span", { className: "text-slate-800", children: "「📋 複製全部」" }),
+                    "貼到教案。"
+                  ] }),
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    "覺得漏題，按",
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "「點此繼續分析本頁」" }),
+                    "；要加分析其他頁，按",
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "「📄 選擇頁面」" }),
+                    "。右下角可暫停／繼續。"
+                  ] }),
+                  /* @__PURE__ */ jsxs8("li", { children: [
+                    "按",
+                    /* @__PURE__ */ jsx8("span", { className: "text-red-500", children: "「✕ 結束分析」" }),
+                    "回首頁，結果會保留，點",
+                    /* @__PURE__ */ jsx8("span", { className: "text-blue-700", children: "「↩ 回到剛才的分析」" }),
+                    "就能回去。"
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx8("p", { className: "text-xs font-bold text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2", children: "小提醒：重新整理或關閉分頁後，分析結果會消失，重要內容請先複製。Google 雲端硬碟等連結常無法直接讀取，請先下載再拖曳進來。" })
             ] })
           ] })
         ] })
