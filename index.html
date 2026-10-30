@@ -1767,6 +1767,7 @@ var App = () => {
   const [now, setNow] = useState4(Date.now());
   const sessionRef = useRef3(0);
   const [confirmClear, setConfirmClear] = useState4(false);
+  const [showHelp, setShowHelp] = useState4(false);
   const getImage = useMemo2(() => createPageImageStore(files, pages), [files, pages]);
   const currentQueuedPage = queuePos < queue.length ? queue[queuePos] : null;
   const isProcessing = currentQueuedPage !== null;
@@ -1944,53 +1945,54 @@ var App = () => {
   const elapsedText = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
   const depthCfg = getDepthConfig(settings.depth);
   return /* @__PURE__ */ jsxs7(Layout, { onOpenSettings: () => openSettings(), hasKey, children: [
-    state === "IDLE" /* IDLE */ && /* @__PURE__ */ jsxs7("div", { className: "flex flex-col gap-4", children: [
-      /* @__PURE__ */ jsx7("div", { className: "text-center mb-1", children: /* @__PURE__ */ jsx7("h2", { className: "text-xl md:text-2xl text-blue-900 font-black tracking-tight", children: "大雄...不，老師！遇到數學難題了嗎？" }) }),
-      /* @__PURE__ */ jsxs7("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl mx-auto w-full px-1", children: [
-        /* @__PURE__ */ jsxs7("div", { className: "relative bg-sky-100 rounded-2xl border-4 border-[#5D4037] p-4 shadow-lg flex flex-col items-center justify-center text-center group hover:bg-sky-50 transition-colors", children: [
-          /* @__PURE__ */ jsx7("div", { className: "absolute -top-3 left-6 bg-[#039BE5] text-white font-bold px-3 py-1 rounded-full border-2 border-[#5D4037] shadow-md transform -rotate-2 text-xs", children: "資源連結" }),
-          /* @__PURE__ */ jsxs7("p", { className: "mt-2 text-slate-700 font-bold text-sm mb-2 leading-relaxed px-2", children: [
-            "若您想要尋找更多",
-            /* @__PURE__ */ jsx7("span", { className: "text-red-500", children: "「數學教材資源」" }),
-            "，可以點選下方連結進入，先行下載備用："
-          ] }),
+    state === "IDLE" /* IDLE */ && /* @__PURE__ */ jsxs7("div", { className: "flex flex-col gap-3", children: [
+      /* @__PURE__ */ jsx7("div", { className: "text-center", children: /* @__PURE__ */ jsx7("h2", { className: "text-lg md:text-2xl text-blue-900 font-black tracking-tight", children: "大雄...不，老師！遇到數學難題了嗎？" }) }),
+      /* @__PURE__ */ jsxs7("div", { className: "relative z-30 max-w-3xl mx-auto w-full flex flex-col gap-2", children: [
+        /* @__PURE__ */ jsxs7("div", { className: "flex flex-wrap items-center justify-center gap-2 text-sm", children: [
           /* @__PURE__ */ jsxs7(
             "a",
             {
               href: "https://padlet.com/cdrcdr/breakout-room/eo1R47MnMkMxqZDL-W7ZVbegpqEZ5XNDM",
               target: "_blank",
               rel: "noopener noreferrer",
-              className: "bg-white hover:bg-yellow-100 border-2 border-[#5D4037] text-slate-800 font-black py-2 px-6 rounded-xl shadow-[2px_2px_0px_0px_#5D4037] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2 text-base",
+              className: "inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 text-sky-800 font-bold rounded-full px-3 py-1",
+              title: "更多數學教材資源，可先下載備用",
               children: [
-                /* @__PURE__ */ jsx7("span", { className: "text-lg", children: "📚" }),
-                "數學教學資源網"
+                "📚 數學教學資源網 ",
+                /* @__PURE__ */ jsx7("span", { "aria-hidden": "true", className: "text-xs", children: "↗" })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs7(
+            "button",
+            {
+              type: "button",
+              onClick: () => setShowHelp((v) => !v),
+              "aria-expanded": showHelp,
+              className: "inline-flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 border-2 border-teal-200 text-teal-800 font-bold rounded-full px-3 py-1",
+              children: [
+                "💡 使用說明 ",
+                /* @__PURE__ */ jsx7("span", { "aria-hidden": "true", className: "text-xs", children: showHelp ? "▲" : "▼" })
               ]
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs7("div", { className: "relative bg-[#B2DFDB] rounded-2xl border-4 border-[#5D4037] p-4 shadow-lg flex flex-col items-center text-center group hover:bg-[#A7D7D3] transition-colors", children: [
-          /* @__PURE__ */ jsx7("div", { className: "absolute -top-3 right-6 bg-[#66BB6A] text-white font-bold px-3 py-1 rounded-full border-2 border-[#5D4037] shadow-md transform rotate-2 text-xs", children: "使用說明" }),
-          /* @__PURE__ */ jsxs7("div", { className: "flex items-center justify-center gap-2 mb-2 mt-1", children: [
-            /* @__PURE__ */ jsx7("div", { className: "text-2xl animate-bounce", children: "💡" }),
-            /* @__PURE__ */ jsx7("h3", { className: "text-lg font-black text-[#00695C]", children: "不知道怎麼用？" })
+        showHelp && /* @__PURE__ */ jsxs7("ol", { className: "animate-fade-in-up text-left text-slate-700 font-bold text-xs sm:text-sm space-y-1 bg-teal-50/70 border-2 border-teal-100 rounded-xl px-4 py-3 list-decimal list-inside", children: [
+          /* @__PURE__ */ jsx7("li", { children: "左上角「⚙️ 金鑰與模型」貼上 Gemini API 金鑰（只需設定一次）。" }),
+          /* @__PURE__ */ jsxs7("li", { children: [
+            "選擇分析深度，再按",
+            /* @__PURE__ */ jsx7("span", { className: "text-red-500", children: "「選擇檔案」" }),
+            "或",
+            /* @__PURE__ */ jsx7("span", { className: "text-yellow-600", children: "「拍照分析」" }),
+            "，上傳課本、習作或考卷。"
           ] }),
-          /* @__PURE__ */ jsxs7("ul", { className: "text-left text-slate-800 font-bold text-xs space-y-1 bg-white/50 p-3 rounded-lg w-full", children: [
-            /* @__PURE__ */ jsxs7("li", { children: [
-              "1. 點擊下方",
-              /* @__PURE__ */ jsx7("span", { className: "text-red-500", children: "「選擇檔案」" }),
-              "或",
-              /* @__PURE__ */ jsx7("span", { className: "text-yellow-600", children: "「拍照」" }),
-              "。"
-            ] }),
-            /* @__PURE__ */ jsx7("li", { children: "2. 上傳您的數學課本、習作或考卷圖片。" }),
-            /* @__PURE__ */ jsx7("li", { children: "3. 等待哆啦A夢幫您分析布題與重點。" }),
-            /* @__PURE__ */ jsxs7("li", { children: [
-              "4. 獲得包含",
-              /* @__PURE__ */ jsx7("span", { className: "text-green-600", children: "「降階提問」" }),
-              "與",
-              /* @__PURE__ */ jsx7("span", { className: "text-indigo-600", children: "「素養提問」" }),
-              "的備課指引！"
-            ] })
+          /* @__PURE__ */ jsx7("li", { children: "多頁 PDF 會先讓您勾選要分析的頁面，哆啦A夢逐頁分析布題與重點。" }),
+          /* @__PURE__ */ jsxs7("li", { children: [
+            "獲得包含",
+            /* @__PURE__ */ jsx7("span", { className: "text-green-600", children: "「降階提問」" }),
+            "與",
+            /* @__PURE__ */ jsx7("span", { className: "text-indigo-600", children: "「素養提問」" }),
+            "的備課指引！"
           ] })
         ] })
       ] }),
@@ -2026,8 +2028,8 @@ var App = () => {
           ] }) : /* @__PURE__ */ jsx7("button", { onClick: () => setConfirmClear(true), className: "font-bold text-slate-500 hover:text-red-600 hover:bg-white rounded-xl px-3 py-2", children: "清除" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs7("div", { className: "relative mt-6 mb-2", children: [
-        /* @__PURE__ */ jsx7("div", { className: "absolute left-0 right-0 -top-7 z-20 flex justify-center pointer-events-none", children: /* @__PURE__ */ jsx7("div", { className: "pointer-events-auto relative transform transition-transform hover:scale-105", children: /* @__PURE__ */ jsxs7("div", { className: "bg-gradient-to-b from-[#FF7043] to-[#E64A19] text-white text-lg md:text-xl font-black py-2 px-8 rounded-full border-[4px] border-[#5D4037] shadow-[0_4px_0_0_rgba(93,64,55,1),0_8px_10px_rgba(0,0,0,0.2)] flex items-center gap-3", children: [
+      /* @__PURE__ */ jsxs7("div", { className: `relative mb-2 ${showHelp ? "mt-16" : "mt-10"}`, children: [
+        /* @__PURE__ */ jsx7("div", { className: "absolute left-0 right-0 -top-7 z-20 flex justify-center pointer-events-none", children: /* @__PURE__ */ jsx7("div", { className: "relative", children: /* @__PURE__ */ jsxs7("div", { className: "bg-gradient-to-b from-[#FF7043] to-[#E64A19] text-white text-lg md:text-xl font-black py-2 px-8 rounded-full border-[4px] border-[#5D4037] shadow-[0_4px_0_0_rgba(93,64,55,1),0_8px_10px_rgba(0,0,0,0.2)] flex items-center gap-3", children: [
           /* @__PURE__ */ jsx7("span", { className: "animate-bounce delay-100 text-yellow-300 text-2xl filter drop-shadow-lg", children: "👇" }),
           /* @__PURE__ */ jsx7("span", { className: "tracking-wider drop-shadow-md", children: "主要操作區在此" }),
           /* @__PURE__ */ jsx7("span", { className: "animate-bounce delay-100 text-yellow-300 text-2xl filter drop-shadow-lg", children: "👇" }),
