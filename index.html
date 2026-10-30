@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>哆啦A夢的數學百寶袋 (優履工作室研發v114-1220b)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <!-- Load PDF.js via standard script to ensure global availability and avoid ESM crashes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+      body {
+        font-family: 'Noto Sans TC', sans-serif;
+      }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #eff6ff;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #60a5fa;
+        border-radius: 5px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3b82f6;
+      }
+      /* KaTeX font fix */
+      .katex { font-size: 1.1em; }
+      
+      /* Animations */
+      @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .animate-spin-slow {
+        animation: spin-slow 3s linear infinite; /* Faster for bamboo copter feel */
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fade-in-up 0.5s ease-out forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-markdown": "https://esm.sh/react-markdown@9.0.1?external=react,react-dom",
+    "remark-math": "https://esm.sh/remark-math@6.0.0",
+    "rehype-katex": "https://esm.sh/rehype-katex@7.0.0",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react": "https://esm.sh/react@18.2.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-blue-50 text-slate-700 antialiased selection:bg-yellow-300 selection:text-blue-900">
+    <div id="root"></div>
+  <script type="module">
+// index.tsx
+import React5 from "react";
+import ReactDOM from "react-dom/client";
+
+// App.tsx
+import { useState as useState3, useEffect as useEffect3, useRef as useRef2 } from "react";
+
+// components/Layout.tsx
+import { jsx, jsxs } from "react/jsx-runtime";
+var Layout = ({ children, onOpenSettings, hasKey }) => {
+  return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-blue-50 relative overflow-x-hidden", children: [
+    /* @__PURE__ */ jsx("div", { className: "fixed top-0 left-0 w-full h-full bg-gradient-to-b from-blue-200 to-white z-0" }),
+    /* @__PURE__ */ jsxs("div", { className: "fixed top-6 right-10 w-24 h-24 bg-yellow-400 rounded-full border-4 border-yellow-600 shadow-xl z-0 animate-float hidden md:block", children: [
+      /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 left-0 w-full h-1 bg-yellow-700/20" }),
+      /* @__PURE__ */ jsx("div", { className: "absolute top-[60%] left-1/2 transform -translate-x-1/2 w-4 h-4 bg-black rounded-full opacity-80" })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "fixed top-20 -left-10 w-40 h-4 bg-yellow-400 rotate-12 opacity-50 z-0 hidden md:block" }),
+    /* @__PURE__ */ jsxs(
+      "button",
+      {
+        onClick: onOpenSettings,
+        className: "absolute top-3 left-3 z-50 flex items-center gap-1.5 bg-white/95 hover:bg-yellow-50 border-[3px] border-[#5D4037] rounded-full pl-2.5 pr-3.5 py-1.5 font-black text-sm text-slate-800 shadow-[3px_3px_0_0_#5D4037] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] transition-all",
+        "aria-label": "開啟設定：API 金鑰與模型",
+        children: [
+          /* @__PURE__ */ jsx("span", { className: "text-lg", children: "⚙️" }),
+          /* @__PURE__ */ jsx("span", { className: "hidden sm:inline", children: "金鑰與模型" }),
+          /* @__PURE__ */ jsx("span", { className: `w-2.5 h-2.5 rounded-full ${hasKey ? "bg-green-500" : "bg-red-500 animate-pulse"}`, "aria-hidden": "true" })
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsxs("header", { className: "relative z-10 pt-14 sm:pt-4 pb-2 px-4 text-center", children: [
+      /* @__PURE__ */ jsxs("h1", { className: "text-2xl md:text-4xl font-black text-blue-600 tracking-tighter drop-shadow-sm", children: [
+        /* @__PURE__ */ jsx("span", { className: "inline-block mr-2 text-red-500", children: "🔔" }),
+        "哆啦A夢的",
+        /* @__PURE__ */ jsx("span", { className: "text-red-500", children: " 數學百寶袋" }),
+        /* @__PURE__ */ jsx("span", { className: "block mt-1 md:mt-0 md:inline-block md:ml-4 text-xs md:text-base font-bold text-slate-400 tracking-normal align-middle", children: "(優履工作室研發v114-1220b)" })
+      ] }),
+      /* @__PURE__ */ jsx("p", { className: "mt-2 text-blue-800 font-bold text-base md:text-lg drop-shadow-sm bg-white/50 inline-block px-4 py-1 rounded-full", children: "「真拿你沒辦法，就用這個道具來幫你備課吧！」" })
+    ] }),
+    /* @__PURE__ */ jsx("main", { className: "relative z-10 container mx-auto px-4 pb-12 max-w-6xl", children: /* @__PURE__ */ jsx("div", { className: "bg-white/90 backdrop-blur-sm rounded-[2rem] p-4 md:p-6 shadow-[0_20px_50px_-10px_rgba(59,130,246,0.3)] border-4 border-blue-400 ring-4 ring-white", children }) })
+  ] });
+};
+
+// components/Uploader.tsx
+import { useCallback } from "react";
+
+// constants.ts
+var ANALYSIS_PROMPT_CONTEXT = `
+你現在是 **全國最頂尖的國小數學教學指導專家（哆啦A夢）**。你的工作是協助老師備課，找出教材中的教學亮點與陷阱。
+
+**任務目標**：請將圖片中的數學教材，**「地毯式」**地拆解成一個個獨立的教學布題或練習。
+
+**⛔ 絕對禁止的行為 (違反將受到嚴厲處罰)：**
+1. **禁止廢話**：像「引導學生觀察圖片」、「建立數學概念」這種放諸四海皆準的廢話，一句都不要寫！
+2. **禁止空泛**：不要只說「注意計算」，要說「注意進位時 1 是否有標記」。
+3. **禁止亂框**：Bounding Box 必須包含**完整的題目文字**，不能只框算式。
+
+**✅ 高品質分析的標準 (必須做到)：**
+你的 **content** 欄位中的 **「🎯 哆啦A夢分析」** 必須包含以下三個具體面向 (請使用 Markdown 條列)：
+
+1.  **💡 數學概念拆解**：
+    *   這題背後的具體數學目標是什麼？(例如：這是「異分母分數加法」，關鍵在於找到最小公倍數進行通分)。
+    *   這題的前置經驗是什麼？(學生必須先會「擴分」和「約分」)。
+
+2.  **⚠️ 學生迷思預警**：
+    *   學生最容易在哪個步驟出錯？(例如：學生常會把分母直接相加，變成 1/2 + 1/3 = 2/5)。
+    *   如何預防這個錯誤？
+
+3.  **🎓 具體教學策略**：
+    *   不要只說「引導」，要說「請老師提問：為什麼分母不同不能直接相加？我們可以用畫圖來表示嗎？」。
+    *   給出一個具體的教學亮點或活動建議。
+
+**詳細執行規則**：
+1. **拆題**：看到不同的編號 (1., 2. 或 ❶, ❷)，**務必**拆分成不同物件。
+2. **座標**：[ymin, xmin, ymax, xmax]，必須包含題幹文字。
+
+**JSON 格式範例**：
+[
+  { 
+    "page": 5, 
+    "problemId": 5, 
+    "title": "5. 浩杰到海邊釣魚", 
+    "content": "### 題目內容
+浩杰到海邊釣魚，昨天釣到 2 7/10 公斤，今天釣到 7/4 公斤...
+
+### 🎯 哆啦A夢分析
+#### 💡 數學概念拆解
+本題是**帶分數與假分數的混合加法**。學生需具備三個核心能力：
+1.  **分數轉換**：能流暢地在帶分數與假分數間轉換。
+2.  **尋找公倍數**：分母 10 和 4 的最小公倍數是 20，而非 40 (雖然 40 也對，但數字會變大)。
+
+#### ⚠️ 學生迷思預警
+**常見錯誤**：學生常忽略整數部分，或者通分時忘記分子也要跟著乘。
+**診斷方式**：若學生算出答案的分母是 14 (10+4)，代表他完全不懂通分概念，需退回圖解教學。
+
+#### 🎓 具體教學策略
+建議使用**「整數歸整數，分數歸分數」**的策略。先處理 2 (整數)，再單獨處理 7/10 + 7/4。或是統一全部化為假分數計算，雖然數字較大但邏輯較單純，適合計算能力強但邏輯較弱的學生。", 
+    "boundingBox": [150, 100, 450, 900], 
+    "visualCue": "頁面中上段",
+    "scaffolding": "1. 這裡有一個假分數 7/4，你可以先把它變成帶分數嗎？...",
+    "literacy": "釣到的魚如果不夠分給鄰居，你會怎麼用數學來分配？"
+  }
+]
+`;
+var CONTINUE_ANALYSIS_PROMPT = `
+**任務目標**：繼續分析 PDF 第 {{PAGE_NUM}} 頁，找出遺漏的題目。
+
+**已知題目**：
+{{EXISTING_TITLES}}
+
+**你的身分**：你是最嚴格的數學教材分析師。
+
+**檢查重點**：
+1. **下半部還有題目嗎？** 不要漏掉頁面最下方的練習題。
+2. **側邊欄有題目嗎？** 有些課本會在角落放「加油小站」。
+
+**輸出規則**：
+- 僅輸出**新發現**的項目 JSON Array。
+- 保持高品質的分析內容 (參照上述標準)。
+- **page**: {{PAGE_NUM}}
+`;
+var DEFAULT_MODEL = "gemini-3.1-pro-preview";
+var PRESET_MODELS = [
+  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", note: "推理最強、分析最細，速度較慢（原版使用 Pro 系列）" },
+  { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash", note: "速度與品質平衡，適合大量頁面" },
+  { id: "gemini-3-flash-preview", label: "Gemini 3 Flash", note: "快速，品質穩定" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite", note: "最快最省額度，分析較精簡" }
+];
+var DEPTH_OPTIONS = [
+  {
+    id: "quick",
+    label: "快速瀏覽",
+    icon: "🚁",
+    tagline: "每題抓重點：概念、迷思、策略各 1～2 句",
+    eta: "每頁約 15～40 秒",
+    thinkingLevel: "low",
+    thinkingBudget: 1024,
+    maxOutputTokens: 8192,
+    prompt: `
+**📏 分析深度：快速瀏覽**
+- 「題目內容」只摘錄關鍵句即可。
+- 「🎯 哆啦A夢分析」的三個面向（💡數學概念拆解、⚠️學生迷思預警、🎓具體教學策略）**各寫 1～2 句最關鍵的重點**，不要展開。
+- scaffolding（降階提問）寫 2 題；literacy（素養提問）寫 1 題。
+- 仍然禁止廢話與空泛句子，短但要具體。
+`
+  },
+  {
+    id: "standard",
+    label: "標準分析",
+    icon: "🔦",
+    tagline: "完整三面向分析，加上降階與素養提問",
+    eta: "每頁約 40～90 秒",
+    thinkingLevel: "medium",
+    thinkingBudget: 4096,
+    maxOutputTokens: 16384,
+    prompt: `
+**📏 分析深度：標準分析**
+- 依照上方「高品質分析的標準」完整撰寫三個面向。
+- scaffolding（降階提問）寫 3 題，由淺入深；literacy（素養提問）寫 1～2 題。
+`
+  },
+  {
+    id: "deep",
+    label: "深度剖析",
+    icon: "🔬",
+    tagline: "再加課綱對應、多元解法、差異化教學與評量",
+    eta: "每頁約 1.5～4 分鐘",
+    thinkingLevel: "high",
+    thinkingBudget: 16384,
+    maxOutputTokens: 32768,
+    prompt: `
+**📏 分析深度：深度剖析（備課研究等級）**
+除了三個基本面向，請在「🎯 哆啦A夢分析」之後**再加入以下四個小節**（使用 #### 標題）：
+1. **#### 📚 課綱對應**：對應十二年國教數學領域的學習內容／學習表現代碼（例如 N-5-7、n-III-6），並說明本題在學習脈絡中的位置（前一個年級學過什麼、之後會銜接什麼）。不確定時請寫「可能對應」。
+2. **#### 🔀 多元解法**：至少提出兩種不同解法（例如畫圖、列式、推理），並比較各自適合哪一類學生。
+3. **#### 🧩 差異化教學**：分別給「需要協助的學生」與「學習較快的學生」一個具體的調整做法。
+4. **#### ✅ 評量與檢核**：設計 1 題可以在課堂上快速檢核理解的形成性評量題，附參考答案與判讀方式。
+
+- 三個基本面向也要寫得更深入：迷思部分請列出 2 種以上錯誤類型，並寫出學生的錯誤算式。
+- scaffolding（降階提問）寫 4～5 題，拆到最小步驟，每題後面用括號附上「預期學生回答」。
+- literacy（素養提問）寫 2～3 題，連結真實生活情境，並至少有 1 題是開放性問題。
+`
+  }
+];
+var getDepthConfig = (id) => DEPTH_OPTIONS.find((d) => d.id === id) || DEPTH_OPTIONS[1];
+
+// components/DepthPicker.tsx
+import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+var DepthPicker = ({ value, onChange }) => /* @__PURE__ */ jsx2("div", { role: "radiogroup", "aria-label": "分析深度", className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: DEPTH_OPTIONS.map((opt) => {
+  const active = value === opt.id;
+  return /* @__PURE__ */ jsxs2(
+    "button",
+    {
+      type: "button",
+      role: "radio",
+      "aria-checked": active,
+      onClick: () => onChange(opt.id),
+      className: `relative text-left rounded-2xl border-[3px] px-4 py-3 transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 ${active ? "bg-blue-600 border-[#5D4037] text-white shadow-[3px_3px_0_0_#5D4037] -translate-y-0.5" : "bg-white border-blue-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50"}`,
+      children: [
+        /* @__PURE__ */ jsxs2("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx2("span", { className: "text-2xl", "aria-hidden": "true", children: opt.icon }),
+          /* @__PURE__ */ jsx2("span", { className: "font-black text-lg", children: opt.label }),
+          active && /* @__PURE__ */ jsx2("span", { className: "ml-auto text-yellow-300 font-black text-sm", children: "✓ 已選" })
+        ] }),
+        /* @__PURE__ */ jsx2("p", { className: `mt-1 text-xs font-bold leading-relaxed ${active ? "text-blue-100" : "text-slate-500"}`, children: opt.tagline }),
+        /* @__PURE__ */ jsxs2("p", { className: `mt-1 text-[11px] font-bold ${active ? "text-yellow-200" : "text-blue-400"}`, children: [
+          "⏱ ",
+          opt.eta
+        ] })
+      ]
+    },
+    opt.id
+  );
+}) });
+var DepthSelect = ({ value, onChange, id = "depth-select" }) => /* @__PURE__ */ jsxs2("label", { htmlFor: id, className: "flex items-center gap-1 text-xs font-bold text-blue-100", children: [
+  /* @__PURE__ */ jsx2("span", { className: "hidden sm:inline", children: "分析深度" }),
+  /* @__PURE__ */ jsx2(
+    "select",
+    {
+      id,
+      value,
+      onChange: (e) => onChange(e.target.value),
+      className: "bg-blue-700 text-white border border-blue-400 rounded-lg px-2 py-1 font-bold focus:outline-none focus:ring-2 focus:ring-yellow-300",
+      title: "之後的分析（含繼續分析本頁、下一頁）會使用這個深度",
+      children: DEPTH_OPTIONS.map((o) => /* @__PURE__ */ jsxs2("option", { value: o.id, children: [
+        o.icon,
+        " ",
+        o.label
+      ] }, o.id))
+    }
+  )
+] });
+
+// components/Uploader.tsx
+import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
+var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOpenSettings }) => {
+  const handleFileChange = useCallback(async (event) => {
+    const input = event.target;
+    const files = input.files ? Array.from(input.files) : [];
+    input.value = "";
+    if (files.length === 0) return;
+    const newFiles = [];
+    const readFile = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            resolve({
+              id: Math.random().toString(36).substr(2, 9),
+              data: reader.result,
+              mimeType: file.type
+            });
+          } else {
+            reject(new Error("Failed to read file"));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
+    try {
+      for (let i = 0; i < files.length; i++) {
+        newFiles.push(await readFile(files[i]));
+      }
+      onFilesSelected(newFiles);
+    } catch (error) {
+      console.error("Error reading files", error);
+      alert("讀取檔案失敗，請重試！");
+    }
+  }, [onFilesSelected]);
+  return /* @__PURE__ */ jsx3("div", { className: "w-full max-w-3xl mx-auto px-1 sm:px-4", children: /* @__PURE__ */ jsxs3("div", { className: "relative group", children: [
+    /* @__PURE__ */ jsx3("div", { className: "absolute -inset-2 bg-gradient-to-r from-blue-400 to-red-400 rounded-[2.5rem] blur opacity-40 group-hover:opacity-75 transition duration-500" }),
+    /* @__PURE__ */ jsxs3("div", { className: "relative bg-white ring-4 ring-blue-100 rounded-[2rem] p-4 sm:p-6 pt-12 text-center border-b-[10px] border-blue-500/10 hover:border-blue-400 transition-colors shadow-2xl", children: [
+      /* @__PURE__ */ jsx3("div", { className: "mb-4 bg-blue-100 w-20 h-20 mx-auto rounded-full flex items-center justify-center border-4 border-white shadow-md group-hover:scale-110 transition-transform", children: /* @__PURE__ */ jsx3("span", { className: "text-3xl", children: "🚪" }) }),
+      /* @__PURE__ */ jsx3("h3", { className: "text-2xl font-black text-blue-900 mb-2", children: "將備課教材放入「四次元百寶袋」" }),
+      /* @__PURE__ */ jsx3("p", { className: "text-blue-500 mb-5 font-medium text-base", children: "不管是教科書文本、數學題目、我都會幫您解構分析和提供備課指引！" }),
+      /* @__PURE__ */ jsxs3("div", { className: `mb-5 flex flex-wrap items-center justify-center gap-2 rounded-2xl border-2 px-4 py-2 text-sm font-bold ${hasKey ? "bg-green-50 border-green-200 text-green-800" : "bg-yellow-50 border-yellow-300 text-yellow-900"}`, children: [
+        /* @__PURE__ */ jsx3("span", { children: hasKey ? "🔑 金鑰已設定" : "🔑 尚未輸入 API 金鑰" }),
+        /* @__PURE__ */ jsx3("span", { className: "text-slate-300 hidden sm:inline", children: "|" }),
+        /* @__PURE__ */ jsxs3("span", { children: [
+          "🤖 模型：",
+          /* @__PURE__ */ jsx3("span", { className: "font-mono", children: modelName })
+        ] }),
+        /* @__PURE__ */ jsx3(
+          "button",
+          {
+            type: "button",
+            onClick: onOpenSettings,
+            className: "ml-1 bg-white border-2 border-[#5D4037] text-slate-800 rounded-full px-3 py-0.5 shadow-[2px_2px_0_0_#5D4037] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]",
+            children: hasKey ? "⚙️ 變更" : "⚙️ 前往設定"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs3("div", { className: "mb-6 text-left", children: [
+        /* @__PURE__ */ jsx3("h4", { className: "font-black text-blue-900 mb-2 text-center", children: "① 選擇分析深度" }),
+        /* @__PURE__ */ jsx3(DepthPicker, { value: depth, onChange: onDepthChange })
+      ] }),
+      /* @__PURE__ */ jsx3("h4", { className: "font-black text-blue-900 mb-3", children: "② 放入教材開始分析" }),
+      /* @__PURE__ */ jsxs3("div", { className: "flex flex-col sm:flex-row justify-center gap-4", children: [
+        /* @__PURE__ */ jsxs3("label", { className: "cursor-pointer transform hover:scale-105 transition-transform", children: [
+          /* @__PURE__ */ jsxs3("span", { className: "bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white text-lg font-black py-4 px-8 rounded-full shadow-lg border-b-4 border-red-800 active:border-0 active:translate-y-1 flex items-center justify-center gap-2 min-w-[180px]", children: [
+            /* @__PURE__ */ jsx3("span", { className: "text-2xl", children: "📂" }),
+            " 選擇檔案"
+          ] }),
+          /* @__PURE__ */ jsx3(
+            "input",
+            {
+              type: "file",
+              multiple: true,
+              accept: "image/*,application/pdf",
+              id: "file-input",
+              className: "hidden",
+              onChange: handleFileChange
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs3("label", { className: "cursor-pointer transform hover:scale-105 transition-transform", children: [
+          /* @__PURE__ */ jsxs3("span", { className: "bg-gradient-to-b from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-yellow-900 text-lg font-black py-4 px-8 rounded-full shadow-lg border-b-4 border-yellow-700 active:border-0 active:translate-y-1 flex items-center justify-center gap-2 min-w-[180px]", children: [
+            /* @__PURE__ */ jsx3("span", { className: "text-2xl", children: "📸" }),
+            " 拍照分析"
+          ] }),
+          /* @__PURE__ */ jsx3(
+            "input",
+            {
+              type: "file",
+              accept: "image/*",
+              capture: "environment",
+              className: "hidden",
+              onChange: handleFileChange
+            }
+          )
+        ] })
+      ] })
+    ] })
+  ] }) });
+};
+
+// components/AnalysisView.tsx
+import { useState, useMemo, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import { Fragment, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+if (typeof window !== "undefined" && window.pdfjsLib) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+var DoraemonPocketLoading = ({ small = false }) => /* @__PURE__ */ jsxs4("div", { className: `flex flex-col items-center justify-center ${small ? "gap-2" : "py-10 gap-6"}`, children: [
+  /* @__PURE__ */ jsx4("style", { dangerouslySetInnerHTML: { __html: `
+      @keyframes rummage {
+        0% { transform: rotate(0deg) scale(1); }
+        25% { transform: rotate(3deg) scale(1.02); }
+        50% { transform: rotate(-3deg) scale(0.98); }
+        75% { transform: rotate(2deg) scale(1.01); }
+        100% { transform: rotate(0deg) scale(1); }
+      }
+      @keyframes pop-item {
+        0% { opacity: 0; transform: translate(-50%, 20px) scale(0.5); }
+        50% { opacity: 1; transform: translate(-50%, -40px) scale(1.2); }
+        100% { opacity: 0; transform: translate(-50%, -60px) scale(0.8); }
+      }
+      @keyframes hand-move {
+        0% { transform: translate(-50%, 0); }
+        50% { transform: translate(-50%, 5px); }
+        100% { transform: translate(-50%, 0); }
+      }
+      .pocket-rummage { animation: rummage 0.8s ease-in-out infinite; }
+      .item-pop-1 { animation: pop-item 2s ease-out infinite; animation-delay: 0s; }
+      .item-pop-2 { animation: pop-item 2s ease-out infinite; animation-delay: 0.6s; }
+      .item-pop-3 { animation: pop-item 2s ease-out infinite; animation-delay: 1.2s; }
+      
+      .pocket-sm { width: 40px; height: 25px; }
+      .pocket-lg { width: 128px; height: 80px; }
+    ` } }),
+  /* @__PURE__ */ jsxs4("div", { className: `relative ${small ? "w-10 h-6" : "w-32 h-20"}`, children: [
+    !small && /* @__PURE__ */ jsxs4(Fragment, { children: [
+      /* @__PURE__ */ jsx4("div", { className: "absolute top-0 left-1/2 text-3xl item-pop-1", children: "🚁" }),
+      /* @__PURE__ */ jsx4("div", { className: "absolute top-0 left-1/2 text-3xl item-pop-2", children: "🔦" }),
+      /* @__PURE__ */ jsx4("div", { className: "absolute top-0 left-1/2 text-3xl item-pop-3", children: "🍞" })
+    ] }),
+    /* @__PURE__ */ jsx4("div", { className: `absolute bottom-0 left-0 bg-white border-blue-500 rounded-b-full shadow-lg pocket-rummage overflow-hidden z-10 ${small ? "w-10 h-6 border-2" : "w-32 h-20 border-4"}`, children: /* @__PURE__ */ jsx4("div", { className: `absolute left-1/2 bg-red-500 rounded-full border-red-700 shadow-inner animate-[hand-move_0.5s_infinite] ${small ? "-top-1 w-4 h-4 border" : "-top-4 w-12 h-12 border-2"}` }) })
+  ] }),
+  /* @__PURE__ */ jsx4("p", { className: `font-bold text-blue-600 animate-pulse tracking-wide ${small ? "text-sm" : "text-xl"}`, children: small ? "正在翻找..." : "哆啦A夢正在翻找資料..." })
+] });
+var AnalysisView = ({ analysisItems, onReset, files, onContinuePage, depth, onDepthChange, modelName, onOpenSettings }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const canvasRef = useRef(null);
+  const [renderError, setRenderError] = useState(null);
+  const [isAnalyzingMore, setIsAnalyzingMore] = useState(false);
+  const [analyzingNextPage, setAnalyzingNextPage] = useState(false);
+  const [pdfTotalPages, setPdfTotalPages] = useState(null);
+  const [dismissedPrompts, setDismissedPrompts] = useState({});
+  const [activeExtra, setActiveExtra] = useState("none");
+  const currentItem = analysisItems[currentIndex];
+  const totalItems = analysisItems.length;
+  const renderPageNum = useMemo(() => {
+    if (!currentItem) return 1;
+    let pageNum = currentItem.page;
+    if (pdfTotalPages && pageNum > pdfTotalPages) {
+      return pdfTotalPages;
+    }
+    if (pageNum < 1) return 1;
+    return pageNum;
+  }, [currentItem, pdfTotalPages]);
+  const isLastItemOfPage = useMemo(() => {
+    if (!currentItem) return false;
+    const nextItem = analysisItems[currentIndex + 1];
+    return !nextItem || nextItem.page !== currentItem.page;
+  }, [currentIndex, analysisItems, currentItem]);
+  const targetFile = useMemo(() => {
+    if (!files || files.length === 0) return null;
+    let targetIndex = 0;
+    if (files.length > 1) {
+      if (currentItem && typeof currentItem.page === "number") {
+        const pageNum = Math.max(1, currentItem.page);
+        targetIndex = pageNum - 1;
+      }
+    } else {
+      targetIndex = 0;
+    }
+    if (targetIndex < 0) targetIndex = 0;
+    if (targetIndex >= files.length) targetIndex = files.length - 1;
+    return files[targetIndex];
+  }, [files, currentItem]);
+  const isPdf = targetFile?.mimeType === "application/pdf";
+  const displayTotalPages = useMemo(() => {
+    if (isPdf && pdfTotalPages) return pdfTotalPages;
+    return files.length;
+  }, [isPdf, pdfTotalPages, files.length]);
+  const hasNextPageFile = useMemo(() => {
+    if (!currentItem || files.length === 0) return false;
+    const totalAvailablePages = isPdf && pdfTotalPages ? pdfTotalPages : files.length;
+    if (currentIndex === totalItems - 1) {
+      return renderPageNum < totalAvailablePages;
+    }
+    return false;
+  }, [currentIndex, totalItems, currentItem, files.length, isPdf, pdfTotalPages, renderPageNum]);
+  const parsedContent = useMemo(() => {
+    if (!currentItem?.content) return null;
+    const splitKey = "### 🎯 哆啦A夢分析";
+    if (currentItem.content.includes(splitKey)) {
+      const parts = currentItem.content.split(splitKey);
+      let problem = parts[0].replace(/### 題目內容/g, "").trim();
+      let analysis = parts[1].trim();
+      return { isStructured: true, problem, analysis };
+    }
+    return { isStructured: false, raw: currentItem.content };
+  }, [currentItem]);
+  useEffect(() => {
+    setActiveExtra("none");
+  }, [currentIndex]);
+  const handleAnalyzeMoreClick = async () => {
+    if (!currentItem) return;
+    try {
+      setIsAnalyzingMore(true);
+      await new Promise((r) => setTimeout(r, 100));
+      await onContinuePage(renderPageNum);
+    } catch (error) {
+      console.error("Failed to analyze more:", error);
+      alert("啟動失敗，請再試一次");
+    } finally {
+      setIsAnalyzingMore(false);
+    }
+  };
+  const handleAnalyzeNextPageClick = async () => {
+    if (!currentItem) return;
+    const nextPage = renderPageNum + 1;
+    try {
+      setAnalyzingNextPage(true);
+      await new Promise((r) => setTimeout(r, 100));
+      await onContinuePage(nextPage);
+    } catch (error) {
+      console.error("Failed to analyze next page:", error);
+      alert("啟動失敗，請再試一次");
+    } finally {
+      setAnalyzingNextPage(false);
+    }
+  };
+  const handleDismissPrompt = () => {
+    if (currentItem) {
+      setDismissedPrompts((prev) => ({ ...prev, [currentItem.page]: true }));
+    }
+  };
+  const drawBoundingBox = (ctx, width, height, box) => {
+    if (!box || box.length !== 4) return;
+    const [ymin, xmin, ymax, xmax] = box;
+    const x = xmin / 1e3 * width;
+    const y = ymin / 1e3 * height;
+    const w = (xmax - xmin) / 1e3 * width;
+    const h = (ymax - ymin) / 1e3 * height;
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#ef4444";
+    ctx.setLineDash([15, 10]);
+    ctx.rect(x, y, w, h);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+    ctx.fill();
+    ctx.setLineDash([]);
+  };
+  useEffect(() => {
+    let renderTask = null;
+    let isActive = true;
+    const renderContent = async () => {
+      if (!targetFile || !canvasRef.current) return;
+      setRenderError(null);
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      try {
+        if (isPdf) {
+          if (!window.pdfjsLib) {
+            setRenderError("PDF 核心模組未載入");
+            return;
+          }
+          const loadingTask = window.pdfjsLib.getDocument(targetFile.data);
+          const pdf = await loadingTask.promise;
+          if (!isActive) return;
+          setPdfTotalPages(pdf.numPages);
+          const page = await pdf.getPage(renderPageNum);
+          if (!isActive) return;
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale });
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          const renderContext = {
+            canvasContext: ctx,
+            viewport
+          };
+          if (renderTask && renderTask.cancel) {
+            try {
+              renderTask.cancel();
+            } catch (e) {
+            }
+          }
+          renderTask = page.render(renderContext);
+          await renderTask.promise;
+          if (isActive) {
+            drawBoundingBox(ctx, viewport.width, viewport.height, currentItem?.boundingBox);
+          }
+        } else {
+          setPdfTotalPages(null);
+          const img = new Image();
+          img.src = targetFile.data;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          if (!isActive) return;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          drawBoundingBox(ctx, img.width, img.height, currentItem?.boundingBox);
+        }
+      } catch (error) {
+        if (error?.name === "RenderingCancelledException") return;
+        console.error("Render Failed:", error);
+        if (isActive) setRenderError("無法預覽內容");
+      }
+    };
+    const timeoutId = setTimeout(renderContent, 50);
+    return () => {
+      clearTimeout(timeoutId);
+      isActive = false;
+      if (renderTask && renderTask.cancel) renderTask.cancel();
+    };
+  }, [targetFile, renderPageNum, isPdf, currentItem]);
+  return /* @__PURE__ */ jsxs4("div", { className: "animate-fade-in-up h-[85vh] flex flex-col", children: [
+    /* @__PURE__ */ jsxs4("div", { className: "bg-blue-600 rounded-2xl p-4 mb-4 shadow-lg border border-blue-500 flex flex-wrap items-center justify-between gap-3 shrink-0 text-white", children: [
+      /* @__PURE__ */ jsxs4("div", { className: "flex items-center gap-4 min-w-0", children: [
+        /* @__PURE__ */ jsx4("button", { onClick: onReset, className: "text-blue-100 hover:text-yellow-300 font-bold text-sm flex items-center gap-1 transition-colors", children: "⬅ 收起道具" }),
+        /* @__PURE__ */ jsx4("div", { className: "h-8 w-px bg-blue-400" }),
+        /* @__PURE__ */ jsxs4("div", { children: [
+          /* @__PURE__ */ jsx4("h2", { className: "font-black text-white text-lg md:text-xl", children: currentItem?.title || "分析結果" }),
+          /* @__PURE__ */ jsxs4("div", { className: "text-xs text-blue-200 font-bold flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxs4("span", { children: [
+              "第 ",
+              renderPageNum,
+              " / ",
+              displayTotalPages,
+              " 頁"
+            ] }),
+            /* @__PURE__ */ jsx4("span", { className: "w-1 h-1 rounded-full bg-blue-300" }),
+            /* @__PURE__ */ jsx4("span", { children: currentItem?.problemId ? `布題 ${currentItem.problemId}` : "補充練習" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs4("div", { className: "flex flex-wrap items-center gap-2", children: [
+        /* @__PURE__ */ jsx4(DepthSelect, { value: depth, onChange: onDepthChange }),
+        /* @__PURE__ */ jsxs4(
+          "button",
+          {
+            onClick: onOpenSettings,
+            className: "text-xs font-bold bg-blue-700 hover:bg-blue-800 border border-blue-400 rounded-lg px-2 py-1 font-mono max-w-[160px] truncate",
+            title: "變更模型或金鑰",
+            children: [
+              "🤖 ",
+              modelName
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx4("div", { className: "h-6 w-px bg-blue-400 mx-1 hidden sm:block" }),
+        /* @__PURE__ */ jsx4(
+          "button",
+          {
+            disabled: currentIndex === 0,
+            onClick: () => setCurrentIndex((c) => Math.max(0, c - 1)),
+            className: `p-2 rounded-full border ${currentIndex === 0 ? "border-blue-400 text-blue-400" : "bg-white border-white text-blue-600 hover:bg-yellow-100 hover:text-blue-700 hover:border-yellow-300"} transition-all`,
+            children: "◀"
+          }
+        ),
+        /* @__PURE__ */ jsxs4("span", { className: "font-mono font-bold text-blue-100 bg-blue-700 px-3 py-1 rounded-lg", children: [
+          currentIndex + 1,
+          " / ",
+          totalItems
+        ] }),
+        /* @__PURE__ */ jsx4(
+          "button",
+          {
+            disabled: currentIndex === totalItems - 1,
+            onClick: () => setCurrentIndex((c) => Math.min(totalItems - 1, c + 1)),
+            className: `p-2 rounded-full border ${currentIndex === totalItems - 1 ? "border-blue-400 text-blue-400" : "bg-white border-white text-blue-600 hover:bg-yellow-100 hover:text-blue-700 hover:border-yellow-300"} transition-all`,
+            children: "▶"
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs4("div", { className: "flex flex-col lg:flex-row gap-6 flex-grow overflow-hidden", children: [
+      /* @__PURE__ */ jsx4("div", { className: "lg:w-1/2 flex flex-col h-full gap-4", children: /* @__PURE__ */ jsxs4("div", { className: "bg-white rounded-2xl p-2 shadow-inner border-2 border-blue-100 flex-grow relative overflow-hidden flex flex-col h-full", children: [
+        /* @__PURE__ */ jsxs4("div", { className: "absolute top-0 right-0 z-10 bg-blue-500/90 backdrop-blur text-white text-[10px] px-3 py-1 rounded-bl-xl font-bold uppercase tracking-wider shadow", children: [
+          "SOURCE: ",
+          isPdf ? "PDF DOC" : "IMAGE"
+        ] }),
+        /* @__PURE__ */ jsx4("div", { className: "flex-grow bg-slate-100 rounded-xl flex items-center justify-center overflow-auto relative custom-scrollbar border border-slate-200", children: targetFile ? /* @__PURE__ */ jsxs4("div", { className: "relative min-w-[300px] min-h-[400px] flex items-center justify-center p-4", children: [
+          /* @__PURE__ */ jsx4("canvas", { ref: canvasRef, className: "max-w-full shadow-2xl rounded" }),
+          renderError && /* @__PURE__ */ jsx4("div", { className: "absolute inset-0 flex items-center justify-center bg-white/90 p-4", children: /* @__PURE__ */ jsx4("span", { className: "text-red-500 font-bold text-center", children: renderError }) })
+        ] }) : /* @__PURE__ */ jsxs4("div", { className: "text-slate-400 text-center p-4", children: [
+          /* @__PURE__ */ jsx4("div", { className: "text-4xl mb-2 opacity-50", children: "📄" }),
+          /* @__PURE__ */ jsx4("p", { children: "空白..." })
+        ] }) })
+      ] }) }),
+      /* @__PURE__ */ jsxs4("div", { className: "lg:w-1/2 h-full flex flex-col gap-4", children: [
+        /* @__PURE__ */ jsx4("div", { className: "bg-white border border-blue-100 rounded-3xl p-6 shadow-xl relative flex-grow overflow-hidden flex flex-col ring-4 ring-blue-50", children: /* @__PURE__ */ jsxs4("div", { className: "overflow-y-auto flex-grow pr-2 custom-scrollbar flex flex-col", children: [
+          currentItem?.content ? parsedContent?.isStructured ? /* @__PURE__ */ jsxs4("div", { className: "flex flex-col gap-6 mb-6", children: [
+            /* @__PURE__ */ jsxs4("div", { className: "bg-white rounded-2xl p-5 border-2 border-slate-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors", children: [
+              /* @__PURE__ */ jsx4("div", { className: "absolute top-0 left-0 w-1.5 h-full bg-blue-400" }),
+              /* @__PURE__ */ jsx4("h3", { className: "text-xl font-black text-blue-600 mb-3 flex items-center gap-2 pl-5", children: "題目內容" }),
+              /* @__PURE__ */ jsx4("div", { className: "prose prose-lg max-w-none text-slate-700 pl-5", children: /* @__PURE__ */ jsx4(
+                ReactMarkdown,
+                {
+                  remarkPlugins: [remarkMath],
+                  rehypePlugins: [rehypeKatex],
+                  children: parsedContent.problem
+                }
+              ) })
+            ] }),
+            /* @__PURE__ */ jsxs4("div", { className: "bg-gradient-to-br from-blue-50/50 to-white rounded-2xl p-5 border-2 border-blue-100 shadow-md relative overflow-hidden", children: [
+              /* @__PURE__ */ jsx4("div", { className: "absolute -top-2 -right-2 p-4 opacity-10 pointer-events-none transform rotate-12", children: /* @__PURE__ */ jsx4("span", { className: "text-7xl", children: "🎯" }) }),
+              /* @__PURE__ */ jsxs4("h3", { className: "text-xl font-black text-blue-600 mb-3 flex items-center gap-2 border-b border-blue-100 pb-2", children: [
+                /* @__PURE__ */ jsx4("span", { className: "text-2xl text-red-500", children: "🎯" }),
+                " 哆啦A夢分析"
+              ] }),
+              /* @__PURE__ */ jsx4("div", { className: "prose prose-lg max-w-none prose-p:text-slate-800 prose-strong:text-red-600 prose-strong:bg-yellow-100 prose-strong:px-1 prose-strong:rounded", children: /* @__PURE__ */ jsx4(
+                ReactMarkdown,
+                {
+                  remarkPlugins: [remarkMath],
+                  rehypePlugins: [rehypeKatex],
+                  children: parsedContent.analysis
+                }
+              ) })
+            ] })
+          ] }) : (
+            // Fallback for unstructured content
+            /* @__PURE__ */ jsx4("div", { className: "prose prose-lg max-w-none prose-headings:text-blue-600 prose-headings:font-black prose-strong:text-red-500 prose-p:text-slate-700 prose-li:text-slate-700 prose-code:text-blue-600 prose-code:bg-blue-50 prose-code:rounded prose-code:px-1 mb-6", children: /* @__PURE__ */ jsx4(
+              ReactMarkdown,
+              {
+                remarkPlugins: [remarkMath],
+                rehypePlugins: [rehypeKatex],
+                children: parsedContent?.raw || ""
+              }
+            ) })
+          ) : (
+            // Loading State - Centered vertically in the available space
+            /* @__PURE__ */ jsx4("div", { className: "flex-grow flex flex-col justify-center items-center min-h-[400px]", children: /* @__PURE__ */ jsx4(DoraemonPocketLoading, {}) })
+          ),
+          activeExtra !== "none" && currentItem && /* @__PURE__ */ jsxs4("div", { className: `mt-4 rounded-xl p-4 border-2 shadow-inner animate-fade-in-up min-h-[100px] ${activeExtra === "scaffolding" ? "bg-green-50 border-green-200" : "bg-indigo-50 border-indigo-200"}`, children: [
+            /* @__PURE__ */ jsx4("h4", { className: `font-black text-lg mb-2 flex items-center gap-2 ${activeExtra === "scaffolding" ? "text-green-700" : "text-indigo-700"}`, children: activeExtra === "scaffolding" ? "📉 降階提問 (縮小鏡)" : "🚀 素養提問 (放大燈)" }),
+            /* @__PURE__ */ jsx4("div", { className: "prose prose-sm max-w-none prose-p:text-slate-800 prose-li:text-slate-800", children: /* @__PURE__ */ jsx4(
+              ReactMarkdown,
+              {
+                remarkPlugins: [remarkMath],
+                rehypePlugins: [rehypeKatex],
+                children: activeExtra === "scaffolding" ? currentItem.scaffolding || "*(哆啦A夢忘記準備這個道具了，請嘗試重新分析...)*" : currentItem.literacy || "*(哆啦A夢忘記準備這個道具了，請嘗試重新分析...)*"
+              }
+            ) })
+          ] }),
+          currentItem && isLastItemOfPage && !dismissedPrompts[currentItem.page] && /* @__PURE__ */ jsx4("div", { className: "mt-8 py-4 border-t border-slate-200 animate-fade-in-up", children: isAnalyzingMore ? /* @__PURE__ */ jsx4("div", { className: "flex items-center justify-center gap-3 text-blue-600 bg-blue-50 px-6 py-4 rounded-xl border border-blue-200 shadow-inner", children: /* @__PURE__ */ jsx4(DoraemonPocketLoading, { small: true }) }) : /* @__PURE__ */ jsxs4("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 bg-white p-2 rounded-xl", children: [
+            /* @__PURE__ */ jsxs4("div", { className: "flex items-center gap-3 group cursor-pointer", onClick: handleAnalyzeMoreClick, children: [
+              /* @__PURE__ */ jsx4("div", { className: "text-3xl filter drop-shadow-sm transform group-hover:scale-110 transition-transform", children: "🔍" }),
+              /* @__PURE__ */ jsxs4("div", { className: "text-lg font-bold text-slate-700 group-hover:text-blue-600 transition-colors", children: [
+                "覺得 ",
+                /* @__PURE__ */ jsxs4("span", { className: "text-blue-600 font-black mx-1", children: [
+                  "第 ",
+                  renderPageNum,
+                  " 頁"
+                ] }),
+                " 有遺漏嗎？ ",
+                /* @__PURE__ */ jsx4("span", { className: "underline decoration-blue-300 underline-offset-4 decoration-2", children: "點此繼續分析本頁" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx4(
+              "button",
+              {
+                onClick: handleDismissPrompt,
+                className: "text-slate-300 hover:text-red-400 p-2 rounded-full hover:bg-red-50 transition-colors",
+                title: "隱藏此提示",
+                children: "✕"
+              }
+            )
+          ] }) }),
+          hasNextPageFile && /* @__PURE__ */ jsx4("div", { className: "mt-4 py-6 border-t-2 border-dashed border-blue-200 animate-fade-in-up bg-blue-50/50 rounded-2xl p-4", children: analyzingNextPage ? /* @__PURE__ */ jsxs4("div", { className: "flex items-center justify-center gap-3 text-blue-600", children: [
+            /* @__PURE__ */ jsx4(DoraemonPocketLoading, { small: true }),
+            /* @__PURE__ */ jsx4("span", { className: "font-bold", children: "正在前往下一頁..." })
+          ] }) : /* @__PURE__ */ jsxs4("div", { className: "text-center", children: [
+            /* @__PURE__ */ jsx4("h3", { className: "text-lg font-bold text-blue-800 mb-2", children: "還有下一頁喔！" }),
+            /* @__PURE__ */ jsxs4("p", { className: "text-sm text-slate-600 mb-4", children: [
+              "目前已分析到第 ",
+              renderPageNum,
+              " 頁，但檔案總共有 ",
+              displayTotalPages,
+              " 頁。"
+            ] }),
+            /* @__PURE__ */ jsxs4(
+              "button",
+              {
+                onClick: handleAnalyzeNextPageClick,
+                className: "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-lg font-black py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto",
+                children: [
+                  /* @__PURE__ */ jsx4("span", { children: "➡️" }),
+                  "繼續分析下一頁 (第 ",
+                  renderPageNum + 1,
+                  " 頁)"
+                ]
+              }
+            )
+          ] }) })
+        ] }) }),
+        /* @__PURE__ */ jsxs4("div", { className: "flex flex-wrap gap-3 justify-center shrink-0", children: [
+          /* @__PURE__ */ jsx4(
+            "button",
+            {
+              onClick: () => setActiveExtra((prev) => prev === "scaffolding" ? "none" : "scaffolding"),
+              className: `flex-1 py-3 px-6 rounded-2xl font-black text-lg transition-all shadow-md flex items-center justify-center gap-2 border-b-4 active:border-b-0 active:translate-y-1 ${activeExtra === "scaffolding" ? "bg-green-600 text-white border-green-800 ring-2 ring-green-300" : "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"}`,
+              children: "📉 降階提問"
+            }
+          ),
+          /* @__PURE__ */ jsx4(
+            "button",
+            {
+              onClick: () => setActiveExtra((prev) => prev === "literacy" ? "none" : "literacy"),
+              className: `flex-1 py-3 px-6 rounded-2xl font-black text-lg transition-all shadow-md flex items-center justify-center gap-2 border-b-4 active:border-b-0 active:translate-y-1 ${activeExtra === "literacy" ? "bg-indigo-600 text-white border-indigo-800 ring-2 ring-indigo-300" : "bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-200"}`,
+              children: "🚀 素養提問"
+            }
+          )
+        ] })
+      ] })
+    ] })
+  ] });
+};
+
+// components/SettingsPanel.tsx
+import { useEffect as useEffect2, useState as useState2 } from "react";
+
+// services/geminiService.ts
+var API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+var getEnvApiKey = () => {
+  try {
+    const k = typeof process !== "undefined" && process.env ? process.env.API_KEY || process.env.GEMINI_API_KEY : "";
+    return typeof k === "string" ? k : "";
+  } catch {
+    return "";
+  }
+};
+var GeminiError = class extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+};
+var friendlyError = (err) => {
+  if (err instanceof GeminiError) {
+    const m = err.message || "";
+    if (err.status === 400 && /API key not valid|API_KEY_INVALID/i.test(m)) return "API 金鑰無效，請到右上角「⚙️ 設定」重新貼上金鑰。";
+    if (err.status === 401 || err.status === 403) return "金鑰沒有權限使用這個模型，請確認金鑰正確或換一個模型。";
+    if (err.status === 404) return "找不到這個模型，可能已經下架。請到「⚙️ 設定」按「載入可用模型」重新選擇。";
+    if (err.status === 429) return "使用額度已滿或請求太頻繁，請稍等一分鐘再試，或改用 Flash 系列模型。";
+    if (err.status >= 500) return "Google 伺服器忙碌中，請稍後再試。";
+    return m;
+  }
+  if (err instanceof TypeError) return "無法連線到 Google，請檢查網路連線。";
+  return err instanceof Error ? err.message : "未知錯誤";
+};
+var SAFETY_SETTINGS = [
+  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+];
+var isGemini3 = (model) => /gemini-3/i.test(model);
+var isGemini25 = (model) => /gemini-2\.5/i.test(model);
+var buildGenerationConfig = (model, depth, withThinking) => {
+  const d = getDepthConfig(depth);
+  const config = {
+    maxOutputTokens: d.maxOutputTokens,
+    responseMimeType: "application/json"
+  };
+  if (!isGemini3(model)) config.temperature = 0.7;
+  if (withThinking) {
+    if (isGemini3(model)) config.thinkingConfig = { thinkingLevel: d.thinkingLevel };
+    else if (isGemini25(model)) config.thinkingConfig = { thinkingBudget: d.thinkingBudget };
+  }
+  return config;
+};
+var callGemini = async (settings, depth, parts, withThinking = true) => {
+  const model = settings.model.trim().replace(/^models\//, "");
+  const res = await fetch(`${API_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey.trim() },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts }],
+      generationConfig: buildGenerationConfig(model, depth, withThinking),
+      safetySettings: SAFETY_SETTINGS
+    })
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j?.error?.message || msg;
+    } catch {
+    }
+    if (withThinking && res.status === 400 && /think/i.test(msg)) {
+      return callGemini(settings, depth, parts, false);
+    }
+    throw new GeminiError(msg, res.status);
+  }
+  const data = await res.json();
+  const cand = data?.candidates?.[0];
+  const text = (cand?.content?.parts || []).filter((p) => typeof p.text === "string" && !p.thought).map((p) => p.text).join("");
+  if (!text) {
+    const reason = cand?.finishReason || data?.promptFeedback?.blockReason || "沒有回傳內容";
+    throw new GeminiError(`模型沒有產生內容（${reason}）`, 0);
+  }
+  return text;
+};
+var listAvailableModels = async (apiKey) => {
+  const out = [];
+  let pageToken = "";
+  for (let i = 0; i < 5; i++) {
+    const url = `${API_BASE}/models?pageSize=200${pageToken ? `&pageToken=${pageToken}` : ""}`;
+    const res = await fetch(url, { headers: { "x-goog-api-key": apiKey.trim() } });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const j = await res.json();
+        msg = j?.error?.message || msg;
+      } catch {
+      }
+      throw new GeminiError(msg, res.status);
+    }
+    const data = await res.json();
+    for (const m of data.models || []) {
+      const id = String(m.name || "").replace(/^models\//, "");
+      const methods = m.supportedGenerationMethods || [];
+      if (!id.startsWith("gemini") || !methods.includes("generateContent")) continue;
+      if (/(tts|image|embedding|live|audio|computer-use|robotics)/i.test(id)) continue;
+      out.push({ id, label: m.displayName || id, note: m.description });
+    }
+    pageToken = data.nextPageToken || "";
+    if (!pageToken) break;
+  }
+  return out.sort((a, b) => b.id.localeCompare(a.id, "en", { numeric: true }));
+};
+var testConnection = async (settings) => {
+  const model = settings.model.trim().replace(/^models\//, "");
+  const res = await fetch(`${API_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey.trim() },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: "回覆 OK" }] }],
+      generationConfig: { maxOutputTokens: 256 }
+    })
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j?.error?.message || msg;
+    } catch {
+    }
+    throw new GeminiError(msg, res.status);
+  }
+};
+var fileToPart = (file) => ({
+  inlineData: { mimeType: file.mimeType, data: file.data.split(",")[1] }
+});
+var cleanAndParseJson = (jsonText, fileIndex) => {
+  jsonText = jsonText.trim();
+  if (jsonText.startsWith("```json")) {
+    jsonText = jsonText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (jsonText.startsWith("```")) {
+    jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+  const startBracket = jsonText.indexOf("[");
+  if (startBracket !== -1) {
+    jsonText = jsonText.substring(startBracket);
+  }
+  let items = [];
+  try {
+    items = JSON.parse(jsonText);
+  } catch (parseError) {
+    console.warn(`JSON Parse failed for File ${fileIndex}, attempting recovery...`);
+    let endIdx = jsonText.lastIndexOf("}");
+    while (endIdx !== -1) {
+      try {
+        const subJson = jsonText.substring(0, endIdx + 1) + "]";
+        const result = JSON.parse(subJson);
+        if (Array.isArray(result)) {
+          items = result;
+          break;
+        }
+      } catch (e) {
+      }
+      endIdx = jsonText.lastIndexOf("}", endIdx - 1);
+    }
+  }
+  return items;
+};
+var normalizeItemContent = (item, fileIndex, mimeType, defaultPage) => {
+  const normalizeContent = (val) => {
+    if (val === void 0 || val === null) return void 0;
+    if (typeof val === "string") return val;
+    if (Array.isArray(val)) return val.map(String).join("\n");
+    return String(val);
+  };
+  let content = item.content && typeof item.content === "string" ? item.content : "";
+  content = content.replace(/^#{1,4}\s*(降階提問|素養提問).*$/gim, "").replace(/\*\*(降階提問|素養提問)\*\*.*$/gim, "");
+  if (content.trim().length < 5 || content.includes("undefined")) {
+    content = `### 題目內容
+(題目文字讀取不完整，請參照圖片)
+
+### 🎯 哆啦A夢分析
+**（哆啦A夢正在努力思考中，但這次好像卡住了...）**
+建議老師直接引導學生觀察圖片中的數學關係。`;
+  }
+  if (!item.title || item.title === "undefined" || item.title.trim() === "") {
+    const cleanContent = content.replace(/###\s*題目內容/g, "").replace(/###/g, "").replace(/\*\*/g, "").trim();
+    const firstLine = cleanContent.split("\n")[0].trim();
+    if (firstLine && firstLine.length > 2) {
+      const limit = 30;
+      item.title = firstLine.substring(0, limit) + (firstLine.length > limit ? "..." : "");
+    } else {
+      item.title = "";
+    }
+  }
+  if (!item.problemId) {
+    const titleMatch = item.title.match(/^(\d+)/);
+    if (titleMatch) {
+      item.problemId = parseInt(titleMatch[1]);
+    } else {
+      const contentMatch = content.match(/(?:^|\n)(\d+)[.、\s]/);
+      if (contentMatch) {
+        item.problemId = parseInt(contentMatch[1]);
+      }
+    }
+  }
+  if (!item.problemId) {
+    item.problemId = Math.floor(Math.random() * 1e3) + 100;
+  }
+  if (!item.title) {
+    item.title = `布題 ${item.problemId}`;
+  }
+  let page = item.page;
+  if (defaultPage !== void 0) {
+    if (typeof page !== "number") {
+      page = defaultPage;
+    } else {
+      const diff = Math.abs(page - defaultPage);
+      if (diff > 5) {
+        page = defaultPage;
+      }
+    }
+  } else {
+    if (typeof page !== "number") {
+      page = fileIndex + 1;
+    }
+  }
+  if (!page || page < 1) page = 1;
+  item.page = page;
+  if (!Array.isArray(item.boundingBox) || item.boundingBox.length !== 4) {
+    item.boundingBox = [100, 100, 500, 900];
+  }
+  return {
+    ...item,
+    title: item.title,
+    content,
+    scaffolding: normalizeContent(item.scaffolding),
+    literacy: normalizeContent(item.literacy),
+    visualCue: item.visualCue || "請參照圖片"
+  };
+};
+var processSingleFile = async (settings, depth, file, fileIndex) => {
+  const depthCfg = getDepthConfig(depth);
+  const parts = [fileToPart(file), { text: ANALYSIS_PROMPT_CONTEXT + "\n" + depthCfg.prompt }];
+  try {
+    console.log(`Processing file ${fileIndex} with ${settings.model} (${depthCfg.label})...`);
+    const jsonText = await callGemini(settings, depth, parts);
+    const items = cleanAndParseJson(jsonText, fileIndex);
+    if (items.length === 0) throw new Error("模型回傳的格式無法解析，請再試一次或換一個模型。");
+    return items.map((item) => normalizeItemContent(item, fileIndex, file.mimeType));
+  } catch (error) {
+    console.error(`Error processing file ${fileIndex}:`, error);
+    return [{
+      page: fileIndex + 1,
+      problemId: 0,
+      title: `第 ${fileIndex + 1} 頁分析失敗`,
+      content: `哆啦A夢盡力了，但無法讀取這頁的內容。
+
+**原因：** ${friendlyError(error)}
+
+*使用模型：${settings.model}*`,
+      visualCue: "無",
+      boundingBox: [0, 0, 0, 0]
+    }];
+  }
+};
+var analyzeMoreOnPage = async (settings, depth, file, fileIndex, existingItems, pageNumber) => {
+  const existingTitles = existingItems.map((i) => i.title).join(", ") || "（尚無）";
+  const prompt = ANALYSIS_PROMPT_CONTEXT + "\n" + CONTINUE_ANALYSIS_PROMPT.replace("{{EXISTING_TITLES}}", existingTitles).replace(/{{PAGE_NUM}}/g, pageNumber.toString()) + "\n" + getDepthConfig(depth).prompt;
+  const jsonText = await callGemini(settings, depth, [fileToPart(file), { text: prompt }]);
+  const items = cleanAndParseJson(jsonText, fileIndex);
+  return items.map((item) => normalizeItemContent(item, fileIndex, file.mimeType, pageNumber));
+};
+
+// components/SettingsPanel.tsx
+import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
+var SettingsPanel = ({ open, settings, notice, onSave, onClose }) => {
+  const [draft, setDraft] = useState2(settings);
+  const [showKey, setShowKey] = useState2(false);
+  const [loadedModels, setLoadedModels] = useState2([]);
+  const [listStatus, setListStatus] = useState2({ kind: "idle" });
+  const [testStatus, setTestStatus] = useState2({ kind: "idle" });
+  useEffect2(() => {
+    if (open) {
+      setDraft(settings);
+      setTestStatus({ kind: "idle" });
+    }
+  }, [open, settings]);
+  useEffect2(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  const hasKey = draft.apiKey.trim().length > 0;
+  const isPreset = PRESET_MODELS.some((m) => m.id === draft.model);
+  const isLoaded = loadedModels.some((m) => m.id === draft.model);
+  const handleLoadModels = async () => {
+    if (!hasKey) {
+      setListStatus({ kind: "error", text: "請先貼上 API 金鑰。" });
+      return;
+    }
+    setListStatus({ kind: "busy", text: "正在向 Google 查詢…" });
+    try {
+      const models = await listAvailableModels(draft.apiKey);
+      setLoadedModels(models);
+      setListStatus({ kind: "ok", text: `找到 ${models.length} 個可用來分析圖片的模型。` });
+    } catch (e) {
+      setListStatus({ kind: "error", text: friendlyError(e) });
+    }
+  };
+  const handleTest = async () => {
+    if (!hasKey) {
+      setTestStatus({ kind: "error", text: "請先貼上 API 金鑰。" });
+      return;
+    }
+    if (!draft.model.trim()) {
+      setTestStatus({ kind: "error", text: "請先選擇模型。" });
+      return;
+    }
+    setTestStatus({ kind: "busy", text: "測試中…" });
+    try {
+      await testConnection(draft);
+      setTestStatus({ kind: "ok", text: `連線成功！可以使用 ${draft.model}。` });
+    } catch (e) {
+      setTestStatus({ kind: "error", text: friendlyError(e) });
+    }
+  };
+  const statusColor = (s) => s.kind === "ok" ? "text-green-700" : s.kind === "error" ? "text-red-600" : "text-blue-600";
+  return /* @__PURE__ */ jsx5("div", { className: "fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 overflow-y-auto", onClick: onClose, children: /* @__PURE__ */ jsxs5(
+    "div",
+    {
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "settings-title",
+      onClick: (e) => e.stopPropagation(),
+      className: "relative w-full max-w-2xl bg-white rounded-[1.75rem] border-4 border-[#5D4037] shadow-[6px_6px_0_0_#5D4037] my-4 animate-fade-in-up",
+      children: [
+        /* @__PURE__ */ jsxs5("div", { className: "flex items-center justify-between bg-blue-600 text-white rounded-t-[1.4rem] px-5 py-3", children: [
+          /* @__PURE__ */ jsx5("h2", { id: "settings-title", className: "text-xl font-black flex items-center gap-2", children: "⚙️ 百寶袋設定" }),
+          /* @__PURE__ */ jsx5("button", { onClick: onClose, className: "w-9 h-9 rounded-full hover:bg-blue-500 font-black text-lg", "aria-label": "關閉設定", children: "✕" })
+        ] }),
+        /* @__PURE__ */ jsxs5("div", { className: "p-5 flex flex-col gap-5 max-h-[78vh] overflow-y-auto", children: [
+          notice && /* @__PURE__ */ jsx5("div", { className: "bg-yellow-100 border-2 border-yellow-400 text-yellow-900 font-bold rounded-xl px-4 py-2 text-sm", children: notice }),
+          /* @__PURE__ */ jsxs5("section", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsx5("label", { htmlFor: "api-key", className: "font-black text-blue-900 text-lg", children: "🔑 Gemini API 金鑰" }),
+            /* @__PURE__ */ jsxs5("div", { className: "flex gap-2", children: [
+              /* @__PURE__ */ jsx5(
+                "input",
+                {
+                  id: "api-key",
+                  type: showKey ? "text" : "password",
+                  value: draft.apiKey,
+                  onChange: (e) => setDraft({ ...draft, apiKey: e.target.value }),
+                  placeholder: "貼上以 AIza 開頭的金鑰",
+                  autoComplete: "off",
+                  spellCheck: false,
+                  className: "flex-1 min-w-0 border-2 border-blue-200 focus:border-blue-500 rounded-xl px-3 py-2 font-mono text-sm focus:outline-none"
+                }
+              ),
+              /* @__PURE__ */ jsx5(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => setShowKey((v) => !v),
+                  className: "shrink-0 border-2 border-blue-200 hover:bg-blue-50 rounded-xl px-3 text-sm font-bold text-blue-700",
+                  children: showKey ? "隱藏" : "顯示"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs5("p", { className: "text-xs text-slate-500 font-bold leading-relaxed", children: [
+              "還沒有金鑰？到 ",
+              /* @__PURE__ */ jsx5("a", { href: "https://aistudio.google.com/apikey", target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 underline", children: "Google AI Studio" }),
+              " 免費建立。 金鑰只會從你的瀏覽器直接送到 Google，不會傳給其他人。"
+            ] }),
+            /* @__PURE__ */ jsxs5("label", { htmlFor: "remember-key", className: "flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer w-fit", children: [
+              /* @__PURE__ */ jsx5(
+                "input",
+                {
+                  id: "remember-key",
+                  type: "checkbox",
+                  checked: draft.rememberKey,
+                  onChange: (e) => setDraft({ ...draft, rememberKey: e.target.checked }),
+                  className: "w-4 h-4 accent-blue-600"
+                }
+              ),
+              "記住金鑰（存在這台電腦的瀏覽器）"
+            ] }),
+            draft.rememberKey && /* @__PURE__ */ jsx5("p", { className: "text-xs text-orange-600 font-bold", children: "公用電腦請不要勾選，關閉分頁後就要重新輸入。" })
+          ] }),
+          /* @__PURE__ */ jsxs5("section", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxs5("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsx5("h3", { className: "font-black text-blue-900 text-lg", children: "🤖 選擇模型" }),
+              /* @__PURE__ */ jsx5(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleLoadModels,
+                  disabled: listStatus.kind === "busy",
+                  className: "text-sm font-bold bg-sky-100 hover:bg-sky-200 border-2 border-sky-300 text-sky-800 rounded-xl px-3 py-1 disabled:opacity-60",
+                  children: listStatus.kind === "busy" ? "查詢中…" : "📋 載入我可用的模型"
+                }
+              )
+            ] }),
+            listStatus.text && /* @__PURE__ */ jsx5("p", { className: `text-xs font-bold ${statusColor(listStatus)}`, children: listStatus.text }),
+            /* @__PURE__ */ jsx5("div", { role: "radiogroup", "aria-label": "推薦模型", className: "grid grid-cols-1 sm:grid-cols-2 gap-2", children: PRESET_MODELS.map((m) => {
+              const active = draft.model === m.id;
+              return /* @__PURE__ */ jsxs5(
+                "button",
+                {
+                  type: "button",
+                  role: "radio",
+                  "aria-checked": active,
+                  onClick: () => setDraft({ ...draft, model: m.id }),
+                  className: `text-left rounded-xl border-2 px-3 py-2 transition-colors ${active ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200" : "border-slate-200 hover:border-blue-300"}`,
+                  children: [
+                    /* @__PURE__ */ jsxs5("div", { className: "font-black text-slate-800 flex items-center gap-1", children: [
+                      active && /* @__PURE__ */ jsx5("span", { className: "text-blue-600", children: "●" }),
+                      m.label
+                    ] }),
+                    /* @__PURE__ */ jsx5("div", { className: "font-mono text-[11px] text-slate-400", children: m.id }),
+                    m.note && /* @__PURE__ */ jsx5("div", { className: "text-xs text-slate-600 font-bold mt-0.5", children: m.note })
+                  ]
+                },
+                m.id
+              );
+            }) }),
+            loadedModels.length > 0 && /* @__PURE__ */ jsxs5("div", { className: "flex flex-col gap-1", children: [
+              /* @__PURE__ */ jsx5("label", { htmlFor: "loaded-models", className: "text-sm font-bold text-slate-700", children: "從你的帳號載入的模型" }),
+              /* @__PURE__ */ jsxs5(
+                "select",
+                {
+                  id: "loaded-models",
+                  value: isLoaded ? draft.model : "",
+                  onChange: (e) => e.target.value && setDraft({ ...draft, model: e.target.value }),
+                  className: "border-2 border-blue-200 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-blue-500",
+                  children: [
+                    /* @__PURE__ */ jsx5("option", { value: "", children: "— 選擇其他模型 —" }),
+                    loadedModels.map((m) => /* @__PURE__ */ jsxs5("option", { value: m.id, children: [
+                      m.label,
+                      "（",
+                      m.id,
+                      "）"
+                    ] }, m.id))
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs5("div", { className: "flex flex-col gap-1", children: [
+              /* @__PURE__ */ jsx5("label", { htmlFor: "custom-model", className: "text-sm font-bold text-slate-700", children: "或自行輸入模型名稱" }),
+              /* @__PURE__ */ jsx5(
+                "input",
+                {
+                  id: "custom-model",
+                  type: "text",
+                  value: draft.model,
+                  onChange: (e) => setDraft({ ...draft, model: e.target.value }),
+                  placeholder: "例如 gemini-3.1-pro-preview",
+                  spellCheck: false,
+                  className: `border-2 rounded-xl px-3 py-2 font-mono text-sm focus:outline-none focus:border-blue-500 ${!isPreset && !isLoaded && draft.model ? "border-blue-500 bg-blue-50" : "border-blue-200"}`
+                }
+              ),
+              /* @__PURE__ */ jsx5("p", { className: "text-xs text-slate-500 font-bold", children: "模型名稱常會更新；若出現「找不到模型」，按上方「載入我可用的模型」重新選擇。" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs5("section", { className: "flex flex-wrap items-center gap-3 bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3", children: [
+            /* @__PURE__ */ jsx5(
+              "button",
+              {
+                type: "button",
+                onClick: handleTest,
+                disabled: testStatus.kind === "busy",
+                className: "font-bold bg-white border-2 border-[#5D4037] rounded-xl px-4 py-1.5 shadow-[2px_2px_0_0_#5D4037] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60",
+                children: "🧪 測試連線"
+              }
+            ),
+            /* @__PURE__ */ jsx5("span", { className: `text-sm font-bold ${statusColor(testStatus)}`, "aria-live": "polite", children: testStatus.text || "確認金鑰和模型可以正常使用。" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs5("div", { className: "flex justify-end gap-3 px-5 py-4 border-t-2 border-slate-100", children: [
+          /* @__PURE__ */ jsx5("button", { onClick: onClose, className: "font-bold text-slate-600 hover:bg-slate-100 rounded-xl px-5 py-2", children: "取消" }),
+          /* @__PURE__ */ jsx5(
+            "button",
+            {
+              onClick: () => onSave({ ...draft, apiKey: draft.apiKey.trim(), model: draft.model.trim() || settings.model }),
+              className: "font-black bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white rounded-xl px-6 py-2 border-b-4 border-red-800 active:border-b-0 active:translate-y-1",
+              children: "儲存設定"
+            }
+          )
+        ] })
+      ]
+    }
+  ) });
+};
+
+// App.tsx
+import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
+var SETTINGS_KEY = "doraemon-math-settings";
+var SESSION_KEY = "doraemon-math-session-key";
+var loadSettings = () => {
+  const base = { apiKey: "", model: DEFAULT_MODEL, rememberKey: false, depth: "standard" };
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) Object.assign(base, JSON.parse(raw));
+  } catch {
+  }
+  if (!base.apiKey) {
+    try {
+      base.apiKey = sessionStorage.getItem(SESSION_KEY) || "";
+    } catch {
+    }
+  }
+  if (!base.apiKey) base.apiKey = getEnvApiKey();
+  return base;
+};
+var persistSettings = (s) => {
+  try {
+    const toStore = { ...s, apiKey: s.rememberKey ? s.apiKey : "" };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
+  } catch {
+  }
+  try {
+    sessionStorage.setItem(SESSION_KEY, s.apiKey);
+  } catch {
+  }
+};
+var App = () => {
+  const [state, setState] = useState3("IDLE" /* IDLE */);
+  const [files, setFiles] = useState3([]);
+  const [analysisItems, setAnalysisItems] = useState3([]);
+  const [processedCount, setProcessedCount] = useState3(0);
+  const [isProcessing, setIsProcessing] = useState3(false);
+  const [isPaused, setIsPaused] = useState3(false);
+  const [settings, setSettings] = useState3(loadSettings);
+  const settingsRef = useRef2(settings);
+  settingsRef.current = settings;
+  const [settingsOpen, setSettingsOpen] = useState3(false);
+  const [settingsNotice, setSettingsNotice] = useState3();
+  const [pendingFiles, setPendingFiles] = useState3(null);
+  const hasKey = settings.apiKey.trim().length > 0;
+  const openSettings = (notice) => {
+    setSettingsNotice(notice);
+    setSettingsOpen(true);
+  };
+  const updateSettings = (next) => {
+    setSettings(next);
+    persistSettings(next);
+  };
+  const handleDepthChange = (depth) => updateSettings({ ...settingsRef.current, depth });
+  const [onlineUsers, setOnlineUsers] = useState3(27);
+  const [totalVisits, setTotalVisits] = useState3(15847);
+  useEffect3(() => {
+    setOnlineUsers(Math.floor(Math.random() * 20) + 15);
+    setTotalVisits((prev) => prev + Math.floor(Math.random() * 5));
+  }, []);
+  const sortItems = (items) => {
+    return items.sort((a, b) => {
+      if (a.page !== b.page) return a.page - b.page;
+      if (a.boundingBox && b.boundingBox) {
+        const yDiff = a.boundingBox[0] - b.boundingBox[0];
+        if (Math.abs(yDiff) > 15) return yDiff;
+        return a.boundingBox[1] - b.boundingBox[1];
+      }
+      return a.problemId - b.problemId;
+    });
+  };
+  useEffect3(() => {
+    if (!isProcessing || isPaused || files.length === 0) return;
+    if (processedCount >= files.length) {
+      setIsProcessing(false);
+      return;
+    }
+    const processNext = async () => {
+      const fileIndex = processedCount;
+      const file = files[fileIndex];
+      try {
+        const s = settingsRef.current;
+        const newItems = await processSingleFile(s, s.depth, file, fileIndex);
+        setAnalysisItems((prev) => {
+          const updated = [...prev, ...newItems];
+          return sortItems(updated);
+        });
+      } catch (error) {
+        console.error("Batch processing error", error);
+      } finally {
+        setProcessedCount((prev) => prev + 1);
+      }
+    };
+    processNext();
+  }, [isProcessing, isPaused, processedCount, files]);
+  const startAnalysis = (selectedFiles) => {
+    setFiles(selectedFiles);
+    setProcessedCount(0);
+    setAnalysisItems([]);
+    setIsProcessing(true);
+    setIsPaused(false);
+    setState("RESULT" /* RESULT */);
+  };
+  const handleFilesSelected = async (selectedFiles) => {
+    if (!settingsRef.current.apiKey.trim()) {
+      setPendingFiles(selectedFiles);
+      openSettings(`已收到 ${selectedFiles.length} 個檔案！請先貼上 Gemini API 金鑰，儲存後就會自動開始分析。`);
+      return;
+    }
+    startAnalysis(selectedFiles);
+  };
+  const handleSaveSettings = (next) => {
+    updateSettings(next);
+    setSettingsOpen(false);
+    setSettingsNotice(void 0);
+    if (pendingFiles && next.apiKey.trim()) {
+      const f = pendingFiles;
+      setPendingFiles(null);
+      settingsRef.current = next;
+      startAnalysis(f);
+    }
+  };
+  const handleReset = () => {
+    setFiles([]);
+    setAnalysisItems([]);
+    setProcessedCount(0);
+    setIsProcessing(false);
+    setIsPaused(false);
+    setState("IDLE" /* IDLE */);
+  };
+  const handlePause = () => setIsPaused(true);
+  const handleContinue = () => setIsPaused(false);
+  const handleContinuePageAnalysis = async (pageNumber) => {
+    let fileToProcess;
+    let fileIndex = -1;
+    if (files.length === 1 && files[0].mimeType === "application/pdf") {
+      fileToProcess = files[0];
+      fileIndex = 0;
+    } else {
+      fileIndex = pageNumber - 1;
+      if (fileIndex >= 0 && fileIndex < files.length) {
+        fileToProcess = files[fileIndex];
+      }
+    }
+    if (!fileToProcess) return;
+    const existingItems = analysisItems.filter((i) => i.page === pageNumber);
+    try {
+      const s = settingsRef.current;
+      const newItems = await analyzeMoreOnPage(s, s.depth, fileToProcess, fileIndex, existingItems, pageNumber);
+      if (newItems.length > 0) {
+        setAnalysisItems((prev) => {
+          const updated = [...prev, ...newItems];
+          return sortItems(updated);
+        });
+        alert(`哆啦A夢又發現了 ${newItems.length} 個題目！`);
+      } else {
+        alert("哆啦A夢仔細檢查後，覺得這頁已經分析得很完整囉！");
+      }
+    } catch (e) {
+      console.error(e);
+      alert(`分析過程中出了點小差錯：${friendlyError(e)}`);
+    }
+  };
+  const isComplete = files.length > 0 && processedCount === files.length;
+  return /* @__PURE__ */ jsxs6(Layout, { onOpenSettings: () => openSettings(), hasKey, children: [
+    state === "IDLE" /* IDLE */ && /* @__PURE__ */ jsxs6("div", { className: "flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsx6("div", { className: "text-center mb-1", children: /* @__PURE__ */ jsx6("h2", { className: "text-xl md:text-2xl text-blue-900 font-black tracking-tight", children: "大雄...不，老師！遇到數學難題了嗎？" }) }),
+      /* @__PURE__ */ jsxs6("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl mx-auto w-full px-1", children: [
+        /* @__PURE__ */ jsxs6("div", { className: "relative bg-sky-100 rounded-2xl border-4 border-[#5D4037] p-4 shadow-lg flex flex-col items-center justify-center text-center group hover:bg-sky-50 transition-colors", children: [
+          /* @__PURE__ */ jsx6("div", { className: "absolute -top-3 left-6 bg-[#039BE5] text-white font-bold px-3 py-1 rounded-full border-2 border-[#5D4037] shadow-md transform -rotate-2 text-xs", children: "資源連結" }),
+          /* @__PURE__ */ jsxs6("p", { className: "mt-2 text-slate-700 font-bold text-sm mb-2 leading-relaxed px-2", children: [
+            "若您想要尋找更多",
+            /* @__PURE__ */ jsx6("span", { className: "text-red-500", children: "「數學教材資源」" }),
+            "，可以點選下方連結進入，先行下載備用："
+          ] }),
+          /* @__PURE__ */ jsxs6(
+            "a",
+            {
+              href: "https://padlet.com/cdrcdr/breakout-room/eo1R47MnMkMxqZDL-W7ZVbegpqEZ5XNDM",
+              target: "_blank",
+              rel: "noopener noreferrer",
+              className: "bg-white hover:bg-yellow-100 border-2 border-[#5D4037] text-slate-800 font-black py-2 px-6 rounded-xl shadow-[2px_2px_0px_0px_#5D4037] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2 text-base",
+              children: [
+                /* @__PURE__ */ jsx6("span", { className: "text-lg", children: "📚" }),
+                "數學教學資源網"
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs6("div", { className: "relative bg-[#B2DFDB] rounded-2xl border-4 border-[#5D4037] p-4 shadow-lg flex flex-col items-center text-center group hover:bg-[#A7D7D3] transition-colors", children: [
+          /* @__PURE__ */ jsx6("div", { className: "absolute -top-3 right-6 bg-[#66BB6A] text-white font-bold px-3 py-1 rounded-full border-2 border-[#5D4037] shadow-md transform rotate-2 text-xs", children: "使用說明" }),
+          /* @__PURE__ */ jsxs6("div", { className: "flex items-center justify-center gap-2 mb-2 mt-1", children: [
+            /* @__PURE__ */ jsx6("div", { className: "text-2xl animate-bounce", children: "💡" }),
+            /* @__PURE__ */ jsx6("h3", { className: "text-lg font-black text-[#00695C]", children: "不知道怎麼用？" })
+          ] }),
+          /* @__PURE__ */ jsxs6("ul", { className: "text-left text-slate-800 font-bold text-xs space-y-1 bg-white/50 p-3 rounded-lg w-full", children: [
+            /* @__PURE__ */ jsxs6("li", { children: [
+              "1. 點擊下方",
+              /* @__PURE__ */ jsx6("span", { className: "text-red-500", children: "「選擇檔案」" }),
+              "或",
+              /* @__PURE__ */ jsx6("span", { className: "text-yellow-600", children: "「拍照」" }),
+              "。"
+            ] }),
+            /* @__PURE__ */ jsx6("li", { children: "2. 上傳您的數學課本、習作或考卷圖片。" }),
+            /* @__PURE__ */ jsx6("li", { children: "3. 等待哆啦A夢幫您分析布題與重點。" }),
+            /* @__PURE__ */ jsxs6("li", { children: [
+              "4. 獲得包含",
+              /* @__PURE__ */ jsx6("span", { className: "text-green-600", children: "「降階提問」" }),
+              "與",
+              /* @__PURE__ */ jsx6("span", { className: "text-indigo-600", children: "「素養提問」" }),
+              "的備課指引！"
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs6("div", { className: "relative mt-6 mb-2", children: [
+        /* @__PURE__ */ jsx6("div", { className: "absolute left-0 right-0 -top-7 z-20 flex justify-center pointer-events-none", children: /* @__PURE__ */ jsx6("div", { className: "pointer-events-auto relative transform transition-transform hover:scale-105", children: /* @__PURE__ */ jsxs6("div", { className: "bg-gradient-to-b from-[#FF7043] to-[#E64A19] text-white text-lg md:text-xl font-black py-2 px-8 rounded-full border-[4px] border-[#5D4037] shadow-[0_4px_0_0_rgba(93,64,55,1),0_8px_10px_rgba(0,0,0,0.2)] flex items-center gap-3", children: [
+          /* @__PURE__ */ jsx6("span", { className: "animate-bounce delay-100 text-yellow-300 text-2xl filter drop-shadow-lg", children: "👇" }),
+          /* @__PURE__ */ jsx6("span", { className: "tracking-wider drop-shadow-md", children: "主要操作區在此" }),
+          /* @__PURE__ */ jsx6("span", { className: "animate-bounce delay-100 text-yellow-300 text-2xl filter drop-shadow-lg", children: "👇" }),
+          /* @__PURE__ */ jsx6("div", { className: "absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent rounded-t-full pointer-events-none" })
+        ] }) }) }),
+        /* @__PURE__ */ jsx6("div", { className: "relative z-10 pt-4", children: /* @__PURE__ */ jsx6(
+          Uploader,
+          {
+            onFilesSelected: handleFilesSelected,
+            depth: settings.depth,
+            onDepthChange: handleDepthChange,
+            hasKey,
+            modelName: settings.model,
+            onOpenSettings: () => openSettings()
+          }
+        ) })
+      ] }),
+      /* @__PURE__ */ jsx6("div", { className: "mt-8 flex justify-center w-full", children: /* @__PURE__ */ jsxs6("div", { className: "bg-white/80 backdrop-blur-sm shadow-xl rounded-full border-2 border-[#5D4037] px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-4 text-xs md:text-sm", children: [
+        /* @__PURE__ */ jsxs6("div", { className: "flex items-center gap-2 bg-yellow-50 px-4 py-1.5 rounded-full border border-yellow-200", children: [
+          /* @__PURE__ */ jsx6("span", { className: "text-lg", children: "✉️" }),
+          /* @__PURE__ */ jsxs6("span", { className: "text-slate-700 font-bold", children: [
+            "問題反應信箱: ",
+            /* @__PURE__ */ jsx6("a", { href: "mailto:qekepv@gmail.com", className: "text-blue-600 hover:underline", children: "qekepv@gmail.com" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs6("div", { className: "flex items-center gap-4 text-slate-600 font-bold bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200", children: [
+          /* @__PURE__ */ jsxs6("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx6("span", { className: "w-2 h-2 rounded-full bg-green-500 animate-pulse" }),
+            /* @__PURE__ */ jsxs6("span", { children: [
+              "線上人數: ",
+              /* @__PURE__ */ jsx6("span", { className: "text-red-500 text-base", children: onlineUsers }),
+              " 人"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx6("div", { className: "w-px h-3 bg-slate-300" }),
+          /* @__PURE__ */ jsxs6("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx6("span", { children: "👁️" }),
+            /* @__PURE__ */ jsxs6("span", { children: [
+              "累計人次: ",
+              /* @__PURE__ */ jsx6("span", { className: "text-red-500 text-base", children: totalVisits.toLocaleString() }),
+              " 人次"
+            ] })
+          ] })
+        ] })
+      ] }) })
+    ] }),
+    state === "RESULT" /* RESULT */ && /* @__PURE__ */ jsxs6("div", { className: "relative min-h-screen", children: [
+      /* @__PURE__ */ jsx6(
+        AnalysisView,
+        {
+          analysisItems,
+          onReset: handleReset,
+          files,
+          onContinuePage: handleContinuePageAnalysis,
+          depth: settings.depth,
+          onDepthChange: handleDepthChange,
+          modelName: settings.model,
+          onOpenSettings: () => openSettings()
+        }
+      ),
+      !isComplete && /* @__PURE__ */ jsx6("div", { className: "fixed bottom-20 left-0 w-full z-40 px-4 animate-fade-in-up", children: /* @__PURE__ */ jsxs6("div", { className: "max-w-3xl mx-auto bg-slate-800/90 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-slate-600 flex flex-row items-center justify-between gap-4", children: [
+        /* @__PURE__ */ jsxs6("div", { className: "flex flex-col pl-2 min-w-0", children: [
+          /* @__PURE__ */ jsx6("span", { className: "font-bold text-yellow-400 text-lg flex items-center gap-2", children: isPaused ? "已暫停分析" : "哆啦A夢正在努力分析中..." }),
+          /* @__PURE__ */ jsxs6("span", { className: "text-xs text-slate-300 font-bold truncate", children: [
+            "第 ",
+            Math.min(processedCount + 1, files.length),
+            " / ",
+            files.length,
+            " 個檔案 · ",
+            getDepthConfig(settings.depth).icon,
+            " ",
+            getDepthConfig(settings.depth).label,
+            " · ",
+            settings.model
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx6("div", { className: "shrink-0", children: isPaused ? /* @__PURE__ */ jsx6(
+          "button",
+          {
+            onClick: handleContinue,
+            className: "bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2",
+            children: "▶ 繼續分析"
+          }
+        ) : /* @__PURE__ */ jsx6(
+          "button",
+          {
+            onClick: handlePause,
+            className: "bg-yellow-500 hover:bg-yellow-400 text-yellow-900 font-bold py-2 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2",
+            children: "⏸ 暫停"
+          }
+        ) })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsx6(
+      SettingsPanel,
+      {
+        open: settingsOpen,
+        settings,
+        notice: settingsNotice,
+        onSave: handleSaveSettings,
+        onClose: () => {
+          setSettingsOpen(false);
+          setSettingsNotice(void 0);
+          setPendingFiles(null);
+        }
+      }
+    )
+  ] });
+};
+var App_default = App;
+
+// index.tsx
+import { jsx as jsx7 } from "react/jsx-runtime";
+var rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+var root = ReactDOM.createRoot(rootElement);
+root.render(
+  /* @__PURE__ */ jsx7(React5.StrictMode, { children: /* @__PURE__ */ jsx7(App_default, {}) })
+);
+
+</script>
+</body>
+</html>
