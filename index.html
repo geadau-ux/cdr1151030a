@@ -148,7 +148,7 @@ var ANALYSIS_PROMPT_CONTEXT = `
 **詳細執行規則**：
 1. **拆題**：看到不同的編號 (1., 2. 或 ❶, ❷)，**務必**拆分成不同物件。
 2. **座標**：[ymin, xmin, ymax, xmax]，必須包含題幹文字。
-3. **數學式寫法**：所有數學式（分數、乘除號、次方、角度等）一律用 $...$ 包起來，例如 $\\frac{3}{4}$、$3 \\times 4$。不要寫出沒有被 $ 包住的 \\frac 等指令，也不要用 \\( \\) 或 \\[ \\]。**title 欄位請用一般文字寫分數（例如 3/4），不要用 LaTeX。**
+3. **數學式寫法**：所有數學式（分數、乘除號、次方、角度等）一律用 $...$ 包起來，例如 $\\frac{3}{4}$、$3 \\times 4$。不要寫出沒有被 $ 包住的 \\frac 等指令，也不要用 \\( \\) 或 \\[ \\]。**title 欄位請用一般文字寫分數（例如 3/4），不要用 LaTeX。**因為輸出是 JSON，字串裡的反斜線必須寫成兩個，例如 "$3 \\\\times 4$"、"$\\\\frac{1}{2}$"。
 
 **JSON 格式範例**：
 [
@@ -499,7 +499,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
 // utils/mathText.ts
-var normalizeMath = (s) => (s || "").replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `$$${m}$$`).replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `$${m}$`).replace(/\\t?frac(?=\s*[{\d])/g, "\\dfrac");
+var normalizeMath = (s) => repairBrokenLatex(s || "").replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `$$${m}$$`).replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `$${m}$`).replace(/\\t?frac(?=\s*[{\d])/g, "\\dfrac");
 var SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
 var SYMBOLS = [
   [/\\times/g, "×"],
@@ -541,6 +541,47 @@ var latexToPlain = (input) => {
   return normalizeMath(input).replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => convert(m)).replace(/\$([^$]+?)\$/g, (_, m) => convert(m)).replace(/(\d?\s*\\[dt]?frac\s*\{[^{}]*\}\s*\{[^{}]*\})/g, (m) => convert(m)).replace(/\\(times|div|cdot)/g, (m) => convert(m));
 };
 var stripNoteLabel = (note) => (note || "").replace(/^\s*(?:預期(?:學生)?回答|學生可能回答|設計意圖|意圖|說明)\s*[:：]\s*/, "").trim();
+var fixJsonBackslashes = (raw) => {
+  let out = "";
+  let inString = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (!inString) {
+      if (c === '"') inString = true;
+      out += c;
+      continue;
+    }
+    if (c === '"') {
+      inString = false;
+      out += c;
+      continue;
+    }
+    if (c !== "\\") {
+      out += c;
+      continue;
+    }
+    const next = raw[i + 1] ?? "";
+    const after = raw[i + 2] ?? "";
+    if (next === "\\" || next === '"' || next === "/") {
+      out += c + next;
+      i++;
+      continue;
+    }
+    if ("bfnrt".includes(next) && next && !/[a-zA-Z]/.test(after)) {
+      out += c + next;
+      i++;
+      continue;
+    }
+    if (next === "u" && /^[0-9a-fA-F]{4}$/.test(raw.slice(i + 2, i + 6))) {
+      out += raw.slice(i, i + 6);
+      i += 5;
+      continue;
+    }
+    out += "\\\\";
+  }
+  return out;
+};
+var repairBrokenLatex = (s) => (s || "").replace(/\t(?=(?:imes|ext|heta|riangle|frac|ilde|op|o\b|au))/g, "\\t").replace(/\f(?=(?:rac|orall))/g, "\\f").replace(/\x08(?=(?:eta|ar|oxed|egin|ig|f\b))/g, "\\b").replace(/\r(?=(?:ight|ho|m\b|angle))/g, "\\r").replace(/\n(?=(?:eq\b|eq\s|eq\{|abla|ot\b|ewline))/g, "\\n").replace(/(?<=[\d)\s])imes(?=\s*[\d(])/g, " × ");
 
 // services/geminiService.ts
 var API_BASE = "https://generativelanguage.googleapis.com/v1beta";
@@ -704,6 +745,7 @@ var cleanAndParseJson = (jsonText, fileIndex) => {
   }
   let items = [];
   try {
+    jsonText = fixJsonBackslashes(jsonText);
     items = JSON.parse(jsonText);
   } catch (parseError) {
     console.warn(`JSON Parse failed for File ${fileIndex}, attempting recovery...`);
@@ -853,7 +895,7 @@ ${focus ? `這次請**聚焦在「${focus.label}」**：${focus.hint}` : "請從
 - 使用繁體中文，用國小學生聽得懂的話，老師可以直接念出來問學生。
 - 提問要緊扣這一題的數字與情境，不要寫成任何題目都適用的空話。
 - 每題附上 note：${info.noteLabel}（一句話，開頭不要再寫「${info.noteLabel}：」）。
-- 數學式可以用 LaTeX，例如 $\\frac{3}{4}$。
+- 數學式用 $...$ 包起來，例如 $\\frac{3}{4}$、$3 \\times 4$。輸出是 JSON，字串裡的反斜線要寫成兩個（例如 "$3 \\\\times 4$"）。
 
 【輸出格式】只輸出 JSON 陣列：
 [{"question": "提問內容", "note": "${info.noteLabel}"}]`;
@@ -863,7 +905,7 @@ ${focus ? `這次請**聚焦在「${focus.label}」**：${focus.hint}` : "請從
   try {
     const t = text.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
     const start = t.indexOf("[");
-    arr = JSON.parse(start >= 0 ? t.slice(start) : t);
+    arr = JSON.parse(fixJsonBackslashes(start >= 0 ? t.slice(start) : t));
     if (!Array.isArray(arr)) arr = arr?.questions || [];
   } catch {
     throw new Error("模型回傳的格式無法解析，請再按一次。");
