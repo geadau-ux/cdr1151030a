@@ -78,7 +78,7 @@ import React7 from "react";
 import ReactDOM from "react-dom/client";
 
 // App.tsx
-import { useState as useState6, useEffect as useEffect4, useRef as useRef3, useMemo as useMemo2 } from "react";
+import { useState as useState6, useEffect as useEffect5, useRef as useRef4, useMemo as useMemo2 } from "react";
 
 // components/Layout.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
@@ -117,7 +117,7 @@ var Layout = ({ children, onOpenSettings, hasKey }) => {
 };
 
 // components/Uploader.tsx
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // constants.ts
 var ANALYSIS_PROMPT_CONTEXT = `
@@ -366,6 +366,155 @@ var DepthSelect = ({ value, onChange, id = "depth-select", light = false }) => /
   )
 ] });
 
+// services/textInput.ts
+var newId = () => Math.random().toString(36).slice(2, 11);
+var PAGE_W = 1240;
+var PAGE_H = 1754;
+var PAD = 90;
+var FONT = 34;
+var LINE = 58;
+var FONT_FAMILY = '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif';
+var wrapLine = (ctx, text, maxW) => {
+  if (!text) return [""];
+  const tokens = text.match(/[A-Za-z0-9.,%/+\-=()]+|\s+|./gu) || [];
+  const lines = [];
+  let cur = "";
+  for (const tk of tokens) {
+    const test = cur + tk;
+    if (ctx.measureText(test).width <= maxW || !cur) {
+      cur = test;
+    } else {
+      lines.push(cur.trimEnd());
+      cur = tk.trimStart();
+    }
+    while (ctx.measureText(cur).width > maxW && cur.length > 1) {
+      let cut = cur.length - 1;
+      while (cut > 1 && ctx.measureText(cur.slice(0, cut)).width > maxW) cut--;
+      lines.push(cur.slice(0, cut));
+      cur = cur.slice(cut);
+    }
+  }
+  lines.push(cur.trimEnd());
+  return lines;
+};
+var textToImageFiles = async (text, label = "貼上的文字") => {
+  try {
+    await document.fonts?.load?.(`700 ${FONT}px ${FONT_FAMILY}`);
+  } catch {
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = PAGE_W;
+  canvas.height = PAGE_H;
+  const ctx = canvas.getContext("2d");
+  ctx.font = `500 ${FONT}px ${FONT_FAMILY}`;
+  const maxW = PAGE_W - PAD * 2;
+  const allLines = [];
+  text.replace(/\r\n?/g, "\n").replace(/\t/g, "    ").split("\n").forEach((p) => allLines.push(...wrapLine(ctx, p, maxW)));
+  while (allLines.length && !allLines[0].trim()) allLines.shift();
+  while (allLines.length && !allLines[allLines.length - 1].trim()) allLines.pop();
+  const perPage = Math.floor((PAGE_H - PAD * 2) / LINE);
+  const pages = [];
+  for (let i = 0; i < allLines.length; i += perPage) pages.push(allLines.slice(i, i + perPage));
+  if (pages.length === 0) pages.push([""]);
+  return pages.map((lines, idx) => {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+    ctx.fillStyle = "#1e293b";
+    ctx.font = `500 ${FONT}px ${FONT_FAMILY}`;
+    ctx.textBaseline = "top";
+    lines.forEach((ln, i) => ctx.fillText(ln, PAD, PAD + i * LINE));
+    return {
+      id: newId(),
+      data: canvas.toDataURL("image/jpeg", 0.92),
+      mimeType: "image/jpeg",
+      name: pages.length > 1 ? `${label} 第 ${idx + 1} 頁` : label
+    };
+  });
+};
+var looksLikeUrl = (s) => /^https?:\/\/\S+$/i.test(s.trim());
+var blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(String(r.result));
+  r.onerror = reject;
+  r.readAsDataURL(blob);
+});
+var sniffType = async (blob, url) => {
+  const head = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  const ascii = String.fromCharCode(...head);
+  if (ascii.startsWith("%PDF")) return "application/pdf";
+  if (head[0] === 137 && ascii.slice(1, 4) === "PNG") return "image/png";
+  if (head[0] === 255 && head[1] === 216) return "image/jpeg";
+  if (ascii.startsWith("GIF8")) return "image/gif";
+  if (ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP") return "image/webp";
+  const t = (blob.type || "").split(";")[0].trim();
+  if (t && t !== "application/octet-stream") return t;
+  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  return { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", txt: "text/plain" }[ext || ""] || t;
+};
+var candidateUrls = (raw, apiKey) => {
+  const url = raw.trim();
+  const out = [];
+  const drive = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]{20,})/);
+  const gdoc = url.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([\w-]{20,})/);
+  if (drive && apiKey) out.push({ url: `https://www.googleapis.com/drive/v3/files/${drive[1]}?alt=media&key=${encodeURIComponent(apiKey)}`, via: "drive" });
+  if (gdoc && apiKey) out.push({ url: `https://www.googleapis.com/drive/v3/files/${gdoc[2]}/export?mimeType=application/pdf&key=${encodeURIComponent(apiKey)}`, via: "drive" });
+  if (/dropbox\.com\//.test(url)) out.push({ url: url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace(/[?&]dl=0/, ""), via: "dropbox" });
+  const gh = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)$/);
+  if (gh) out.push({ url: `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${gh[3]}`, via: "github" });
+  if (!drive && !gdoc) out.push({ url, via: "direct" });
+  return out;
+};
+var LinkError = class extends Error {
+};
+var fetchFromLink = async (raw, apiKey) => {
+  const isGoogle = /(drive|docs)\.google\.com/.test(raw);
+  let lastErr = "";
+  for (const c of candidateUrls(raw, apiKey)) {
+    let res;
+    try {
+      res = await fetch(c.url, { redirect: "follow" });
+    } catch {
+      lastErr = "cors";
+      continue;
+    }
+    if (!res.ok) {
+      lastErr = `http${res.status}`;
+      continue;
+    }
+    const blob = await res.blob();
+    if (blob.size > 40 * 1024 * 1024) throw new LinkError("檔案超過 40 MB，請先壓縮或只取需要的頁面。");
+    const type = await sniffType(blob, c.url);
+    const name = decodeURIComponent(raw.split(/[?#]/)[0].split("/").pop() || "連結檔案").slice(0, 60);
+    if (type === "application/pdf" || type.startsWith("image/")) {
+      const dataUrl = await blobToDataUrl(blob);
+      return { files: [{ id: newId(), data: dataUrl.replace(/^data:[^;]*;/, `data:${type};`), mimeType: type, name }] };
+    }
+    if (type.startsWith("text/")) {
+      const txt = await blob.text();
+      if (type === "text/html") {
+        const doc = new DOMParser().parseFromString(txt, "text/html");
+        doc.querySelectorAll("script,style,noscript,nav,header,footer").forEach((el) => el.remove());
+        const body = (doc.body?.innerText || doc.body?.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+        if (body.length < 5) throw new LinkError("這個網頁讀不到文字內容。");
+        return { text: body.slice(0, 12e3) };
+      }
+      return { text: txt.slice(0, 12e3) };
+    }
+    throw new LinkError(`這個連結的檔案類型（${type || "未知"}）無法分析，請提供圖片、PDF 或文字。`);
+  }
+  if (isGoogle) {
+    throw new LinkError("Google 雲端硬碟／文件的檔案無法直接讀取。請在雲端硬碟中開啟檔案，按「下載」存到電腦後，再拖曳到上方的框內；Google 文件可用「檔案 → 下載 → PDF」。");
+  }
+  if (lastErr === "cors") {
+    throw new LinkError("這個網站不允許其他網頁直接下載它的檔案（瀏覽器的安全限制）。請先把檔案下載到電腦，再拖曳到上方的框內；或在網頁上複製題目文字貼到這裡。");
+  }
+  if (lastErr.startsWith("http")) {
+    const code = lastErr.slice(4);
+    throw new LinkError(code === "404" ? "找不到這個檔案（404），請確認連結是否正確。" : code === "403" || code === "401" ? "這個檔案需要登入或沒有公開分享，請改成「知道連結的人都能查看」或先下載到電腦。" : `讀取失敗（錯誤代碼 ${code}）。`);
+  }
+  throw new LinkError("無法讀取這個連結。");
+};
+
 // components/Uploader.tsx
 import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 var readFile = (file) => new Promise((resolve, reject) => {
@@ -381,7 +530,7 @@ var readFile = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 var isAccepted = (f) => f.type.startsWith("image/") || f.type === "application/pdf";
-var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOpenSettings }) => {
+var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOpenSettings, apiKey }) => {
   const [dragging, setDragging] = useState(false);
   const [dropMsg, setDropMsg] = useState("");
   const handleFiles = useCallback(async (list) => {
@@ -400,6 +549,79 @@ var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOp
       alert("讀取檔案失敗，請重試！");
     }
   }, [onFilesSelected]);
+  const [pasteText, setPasteText] = useState("");
+  const [pasteBusy, setPasteBusy] = useState(false);
+  const [pasteMsg, setPasteMsg] = useState("");
+  const textRef = useRef(null);
+  const isLink = looksLikeUrl(pasteText);
+  const submitPaste = async () => {
+    const value = pasteText.trim();
+    if (!value) {
+      setPasteMsg("請先貼上題目文字或檔案連結。");
+      return;
+    }
+    setPasteBusy(true);
+    setPasteMsg("");
+    try {
+      if (looksLikeUrl(value)) {
+        setPasteMsg("正在讀取連結…");
+        const r = await fetchFromLink(value, apiKey);
+        if (r.files) {
+          setPasteMsg("");
+          onFilesSelected(r.files);
+          setPasteText("");
+          return;
+        }
+        if (r.text) {
+          const files = await textToImageFiles(r.text, "連結中的文字");
+          setPasteMsg("");
+          onFilesSelected(files);
+          setPasteText("");
+          return;
+        }
+      } else {
+        if (value.length < 4) {
+          setPasteMsg("文字太短了，請貼上完整的題目。");
+          return;
+        }
+        const files = await textToImageFiles(value);
+        onFilesSelected(files);
+        setPasteText("");
+      }
+    } catch (e) {
+      setPasteMsg(e instanceof LinkError ? e.message : `讀取失敗：${e instanceof Error ? e.message : "請重試"}`);
+    } finally {
+      setPasteBusy(false);
+    }
+  };
+  const handleFilesRef = useRef(handleFiles);
+  handleFilesRef.current = handleFiles;
+  useEffect(() => {
+    const onPaste = (e) => {
+      const dt = e.clipboardData;
+      if (!dt) return;
+      const files = Array.from(dt.files || []).filter(isAccepted);
+      const target = e.target;
+      const inOtherField = !!target && target !== textRef.current && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (inOtherField) return;
+      if (files.length) {
+        e.preventDefault();
+        setPasteMsg("");
+        handleFilesRef.current(files);
+        return;
+      }
+      if (target === textRef.current) return;
+      const text = dt.getData("text/plain");
+      if (text && text.trim()) {
+        e.preventDefault();
+        setPasteText(text.trim());
+        setPasteMsg(looksLikeUrl(text) ? "已貼上連結，按「讀取連結」開始。" : "已貼上文字，確認後按「分析這段文字」。");
+        textRef.current?.focus();
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
   const handleFileChange = (event) => {
     const input = event.target;
     const files = input.files ? Array.from(input.files) : [];
@@ -441,7 +663,7 @@ var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOp
                 /* @__PURE__ */ jsx3("span", { className: "text-3xl", "aria-hidden": "true", children: "🚪" }),
                 /* @__PURE__ */ jsxs3("div", { className: "text-left", children: [
                   /* @__PURE__ */ jsx3("p", { className: "text-lg sm:text-xl font-black text-blue-900 leading-tight", children: "將備課教材放入「四次元百寶袋」" }),
-                  /* @__PURE__ */ jsx3("p", { className: "text-xs sm:text-sm text-blue-500 font-bold", children: "課本、習作、考卷的圖片或 PDF，也可以直接拖曳到這裡" })
+                  /* @__PURE__ */ jsx3("p", { className: "text-xs sm:text-sm text-blue-500 font-bold", children: "課本、習作、考卷的圖片或 PDF，可以拖曳、貼上或貼連結" })
                 ] })
               ] }),
               /* @__PURE__ */ jsxs3("div", { className: "flex flex-wrap justify-center gap-2 sm:gap-3 mt-1", children: [
@@ -460,7 +682,50 @@ var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOp
                   /* @__PURE__ */ jsx3("input", { type: "file", accept: "image/*", capture: "environment", className: "hidden", onChange: handleFileChange })
                 ] })
               ] }),
-              dropMsg && /* @__PURE__ */ jsx3("p", { className: "text-xs font-bold text-red-600", role: "alert", children: dropMsg })
+              dropMsg && /* @__PURE__ */ jsx3("p", { className: "text-xs font-bold text-red-600", role: "alert", children: dropMsg }),
+              /* @__PURE__ */ jsxs3("div", { className: "w-full mt-1 flex flex-col gap-1.5", children: [
+                /* @__PURE__ */ jsxs3("div", { className: "flex items-center gap-2 text-[11px] font-bold text-slate-400", "aria-hidden": "true", children: [
+                  /* @__PURE__ */ jsx3("span", { className: "flex-1 h-px bg-blue-200" }),
+                  "或",
+                  /* @__PURE__ */ jsx3("span", { className: "flex-1 h-px bg-blue-200" })
+                ] }),
+                /* @__PURE__ */ jsxs3("div", { className: "flex gap-2 items-stretch", children: [
+                  /* @__PURE__ */ jsx3("label", { htmlFor: "paste-input", className: "sr-only", children: "貼上題目文字或檔案連結" }),
+                  /* @__PURE__ */ jsx3(
+                    "textarea",
+                    {
+                      id: "paste-input",
+                      ref: textRef,
+                      value: pasteText,
+                      onChange: (e) => {
+                        setPasteText(e.target.value);
+                        setPasteMsg("");
+                      },
+                      onKeyDown: (e) => {
+                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          submitPaste();
+                        }
+                      },
+                      rows: pasteText.includes("\n") ? 4 : 1,
+                      placeholder: "📋 貼上題目文字、檔案連結，或直接按 Ctrl+V 貼上截圖",
+                      disabled: pasteBusy,
+                      className: "flex-1 min-w-0 resize-y bg-white border-2 border-blue-200 focus:border-blue-500 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none leading-relaxed"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx3(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: submitPaste,
+                      disabled: pasteBusy || !pasteText.trim(),
+                      className: "shrink-0 self-end font-black text-sm text-white bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 rounded-xl px-3 py-2 border-b-4 border-blue-800 disabled:border-slate-400 active:border-b-0 active:translate-y-1",
+                      children: pasteBusy ? "讀取中…" : isLink ? "🔗 讀取連結" : "📝 分析這段文字"
+                    }
+                  )
+                ] }),
+                pasteMsg && /* @__PURE__ */ jsx3("p", { className: `text-xs font-bold text-left ${/失敗|無法|不允許|找不到|需要登入|太短|超過|請先貼上/.test(pasteMsg) ? "text-red-600" : "text-blue-600"}`, role: "status", children: pasteMsg })
+              ] })
             ]
           }
         ),
@@ -487,7 +752,7 @@ var Uploader = ({ onFilesSelected, depth, onDepthChange, hasKey, modelName, onOp
 };
 
 // components/AnalysisView.tsx
-import { useState as useState3, useMemo, useEffect, useRef } from "react";
+import { useState as useState3, useMemo, useEffect as useEffect2, useRef as useRef2 } from "react";
 import ReactMarkdown2 from "react-markdown";
 import remarkMath2 from "remark-math";
 import rehypeKatex2 from "rehype-katex";
@@ -1181,7 +1446,7 @@ var AnalysisView = ({
   onOpenSettings
 }) => {
   const [currentIndex, setCurrentIndex] = useState3(0);
-  const canvasRef = useRef(null);
+  const canvasRef = useRef2(null);
   const [renderError, setRenderError] = useState3(null);
   const [isAnalyzingMore, setIsAnalyzingMore] = useState3(false);
   const [dismissedPrompts, setDismissedPrompts] = useState3({});
@@ -1189,7 +1454,7 @@ var AnalysisView = ({
   const totalItems = analysisItems.length;
   const safeIndex = Math.min(currentIndex, Math.max(0, totalItems - 1));
   const currentItem = analysisItems[safeIndex];
-  useEffect(() => {
+  useEffect2(() => {
     if (currentIndex !== safeIndex) setCurrentIndex(safeIndex);
   }, [currentIndex, safeIndex]);
   const renderPageNum = useMemo(() => {
@@ -1220,7 +1485,7 @@ var AnalysisView = ({
     }
     return { isStructured: false, raw: currentItem.content };
   }, [currentItem]);
-  useEffect(() => {
+  useEffect2(() => {
     setActiveExtra("none");
   }, [safeIndex]);
   const handleAnalyzeMoreClick = async () => {
@@ -1246,7 +1511,7 @@ var AnalysisView = ({
   const box = currentItem?.boundingBox;
   const hasBox = !!box && box.length === 4 && box[2] > box[0] && box[3] > box[1] && box.some((v) => v > 0);
   const effectiveMode = hasBox ? viewMode : "page";
-  useEffect(() => {
+  useEffect2(() => {
     let active = true;
     setRenderError(null);
     getImage(renderPageNum, "full").then((src) => {
@@ -1297,7 +1562,7 @@ var AnalysisView = ({
     getImage(renderPageNum, "full").then(setZoomSrc).catch(() => {
     });
   };
-  useEffect(() => {
+  useEffect2(() => {
     if (!zoomSrc) return;
     const onKey = (e) => {
       if (e.key === "Escape") setZoomSrc(null);
@@ -1624,7 +1889,7 @@ var AnalysisView = ({
 };
 
 // components/SettingsPanel.tsx
-import { useEffect as useEffect2, useState as useState4 } from "react";
+import { useEffect as useEffect3, useState as useState4 } from "react";
 import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 var SettingsPanel = ({ open, settings, notice, onSave, onClose }) => {
   const [draft, setDraft] = useState4(settings);
@@ -1632,13 +1897,13 @@ var SettingsPanel = ({ open, settings, notice, onSave, onClose }) => {
   const [loadedModels, setLoadedModels] = useState4([]);
   const [listStatus, setListStatus] = useState4({ kind: "idle" });
   const [testStatus, setTestStatus] = useState4({ kind: "idle" });
-  useEffect2(() => {
+  useEffect3(() => {
     if (open) {
       setDraft(settings);
       setTestStatus({ kind: "idle" });
     }
   }, [open, settings]);
-  useEffect2(() => {
+  useEffect3(() => {
     if (!open) return;
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -1849,7 +2114,7 @@ var SettingsPanel = ({ open, settings, notice, onSave, onClose }) => {
 };
 
 // components/PagePicker.tsx
-import { useEffect as useEffect3, useRef as useRef2, useState as useState5 } from "react";
+import { useEffect as useEffect4, useRef as useRef3, useState as useState5 } from "react";
 
 // services/pdfUtils.ts
 var WORKER_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -1945,10 +2210,10 @@ var parsePageRange = (text, max) => {
 // components/PagePicker.tsx
 import { Fragment as Fragment2, jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
 var Thumb = ({ num, getImage }) => {
-  const ref = useRef2(null);
+  const ref = useRef3(null);
   const [src, setSrc] = useState5(null);
   const [failed, setFailed] = useState5(false);
-  useEffect3(() => {
+  useEffect4(() => {
     const el = ref.current;
     if (!el) return;
     let alive = true;
@@ -1990,7 +2255,7 @@ var PagePicker = ({ pages, fileName, getImage, analyzed, onStart, onCancel, canc
     setSelected(new Set(nums));
     setRangeMsg(`已選取 ${nums.length} 頁。`);
   };
-  useEffect3(() => {
+  useEffect4(() => {
     if (preview === null) return;
     let alive = true;
     setPreviewSrc(null);
@@ -2000,7 +2265,7 @@ var PagePicker = ({ pages, fileName, getImage, analyzed, onStart, onCancel, canc
       alive = false;
     };
   }, [preview, getImage]);
-  useEffect3(() => {
+  useEffect4(() => {
     if (preview === null) return;
     const onKey = (e) => {
       if (e.key === "Escape") setPreview(null);
@@ -2152,8 +2417,8 @@ var PagePicker = ({ pages, fileName, getImage, analyzed, onStart, onCancel, canc
 
 // App.tsx
 import { Fragment as Fragment3, jsx as jsx8, jsxs as jsxs8 } from "react/jsx-runtime";
-var newId = () => Math.random().toString(36).slice(2, 10);
-var withIds = (items) => items.map((it) => it.id ? it : { ...it, id: newId() });
+var newId2 = () => Math.random().toString(36).slice(2, 10);
+var withIds = (items) => items.map((it) => it.id ? it : { ...it, id: newId2() });
 var splitQuestions = (text) => (text || "").split("\n").map((l) => l.replace(/^\s*(?:[-*•]|\d+[.、)）])\s*/, "").trim()).filter(Boolean);
 var SETTINGS_KEY = "doraemon-math-settings";
 var SESSION_KEY = "doraemon-math-session-key";
@@ -2195,7 +2460,7 @@ var App = () => {
   const [isPaused, setIsPaused] = useState6(false);
   const [pageStartedAt, setPageStartedAt] = useState6(Date.now());
   const [now, setNow] = useState6(Date.now());
-  const sessionRef = useRef3(0);
+  const sessionRef = useRef4(0);
   const [confirmClear, setConfirmClear] = useState6(false);
   const [showHelp, setShowHelp] = useState6(false);
   const getImage = useMemo2(() => createPageImageStore(files, pages), [files, pages]);
@@ -2203,7 +2468,7 @@ var App = () => {
   const isProcessing = currentQueuedPage !== null;
   const fileName = files.map((f) => f.name || "未命名檔案").join("、");
   const [settings, setSettings] = useState6(loadSettings);
-  const settingsRef = useRef3(settings);
+  const settingsRef = useRef4(settings);
   settingsRef.current = settings;
   const [settingsOpen, setSettingsOpen] = useState6(false);
   const [settingsNotice, setSettingsNotice] = useState6();
@@ -2220,7 +2485,7 @@ var App = () => {
   const handleDepthChange = (depth) => updateSettings({ ...settingsRef.current, depth });
   const [onlineUsers, setOnlineUsers] = useState6(27);
   const [totalVisits, setTotalVisits] = useState6(15847);
-  useEffect4(() => {
+  useEffect5(() => {
     setOnlineUsers(Math.floor(Math.random() * 20) + 15);
     setTotalVisits((prev) => prev + Math.floor(Math.random() * 5));
   }, []);
@@ -2235,7 +2500,7 @@ var App = () => {
       return a.problemId - b.problemId;
     });
   };
-  useEffect4(() => {
+  useEffect5(() => {
     if (isPaused || currentQueuedPage === null) return;
     const pageNum = currentQueuedPage;
     const session = sessionRef.current;
@@ -2270,7 +2535,7 @@ var App = () => {
       ctrl.abort();
     };
   }, [isPaused, currentQueuedPage, queuePos, getImage]);
-  useEffect4(() => {
+  useEffect5(() => {
     if (!isProcessing || isPaused) return;
     const t = setInterval(() => setNow(Date.now()), 1e3);
     return () => clearInterval(t);
@@ -2371,7 +2636,7 @@ var App = () => {
       alert(`分析過程中出了點小差錯：${friendlyError(e)}`);
     }
   };
-  const itemsRef = useRef3(analysisItems);
+  const itemsRef = useRef4(analysisItems);
   itemsRef.current = analysisItems;
   const handleGenerateExtra = async (itemId, type, focus) => {
     const item = itemsRef.current.find((i) => i.id === itemId);
@@ -2385,7 +2650,7 @@ var App = () => {
     const questions = await generateMoreQuestions(s, s.depth, item, type, focus, existing);
     if (session !== sessionRef.current) return;
     const group = {
-      id: newId(),
+      id: newId2(),
       label: focus ? focus.label : "更多提問",
       icon: focus ? focus.icon : "➕",
       questions
@@ -2443,7 +2708,7 @@ var App = () => {
                 /* @__PURE__ */ jsx8("span", { className: "text-red-500", children: "「選擇檔案」" }),
                 "或",
                 /* @__PURE__ */ jsx8("span", { className: "text-yellow-600", children: "「拍照分析」" }),
-                "，也可以直接把檔案拖進來。"
+                "，也可以把檔案拖進來、按 Ctrl+V 貼上截圖，或貼上題目文字與檔案連結。"
               ] }),
               /* @__PURE__ */ jsx8("li", { children: "多頁 PDF 會先讓您勾選要分析的頁面，哆啦A夢逐頁分析布題與重點。" }),
               /* @__PURE__ */ jsxs8("li", { children: [
@@ -2503,7 +2768,8 @@ var App = () => {
             onDepthChange: handleDepthChange,
             hasKey,
             modelName: settings.model,
-            onOpenSettings: () => openSettings()
+            onOpenSettings: () => openSettings(),
+            apiKey: settings.apiKey
           }
         )
       ] }),
